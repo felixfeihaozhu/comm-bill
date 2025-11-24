@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分销账单 V7.1 - 符号旅游</title>
+  <style>
+    :root {
+      /* 核心配色 */
+      --primary: #002b49;       
+      --primary-light: #f0f4f8; 
+      --accent: #c5a065;        
+      --text-main: #111827;
+      --text-sub: #4b5563;
+      --border: #e5e7eb;
+      --white: #ffffff;
+      --danger: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --font-stack: "Inter", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --shadow-paper: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-stack);
+      background: #f3f4f6;
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container { display: flex; height: 100vh; width: 100vw; }
+
+    /* Icons */
+    svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* Preview Area */
+    .pane-preview { flex: 1; background: #e5e7eb; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .toolbar { padding: 12px 24px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    .toolbar h1 { margin: 0; font-size: 16px; font-weight: 600; color: var(--primary); }
+    .preview-scroll-area { flex: 1; overflow-y: auto; padding: 40px; display: flex; justify-content: center; background-image: radial-gradient(#9ca3af 1px, transparent 1px); background-size: 20px 20px; }
+    .paper { width: 210mm; min-height: 297mm; background: white; box-shadow: var(--shadow-paper); padding: 40px; display: flex; flex-direction: column; position: relative; }
+
+    /* Form Area */
+    .pane-form { width: 640px; background: var(--white); display: flex; flex-direction: column; box-shadow: -5px 0 15px rgba(0,0,0,0.03); z-index: 20; }
+    .form-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .form-header h2 { margin: 0; font-size: 18px; }
+    .form-scroll-area { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 150px; }
+    .form-group { background: var(--primary-light); border: 1px solid #dae2ed; border-radius: 8px; padding: 16px; margin-bottom: 16px; transition: all 0.3s; }
+    .form-title { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .col { flex: 1; min-width: 0; }
+    .col-sm { flex: 0 0 80px; }
+    label { display: block; font-size: 11px; color: var(--text-sub); margin-bottom: 4px; font-weight: 600; }
+    
+    /* --- Unified Input Group Style --- */
+    .input-group { display: flex; width: 100%; align-items: stretch; position: relative; }
+    .input-group .input-box { flex: 1; position: relative; }
+    .input-group .input-box input { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; width: 100%; padding-right: 26px; }
+    .input-group select { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; width: 100%; flex: 1; }
+
+    /* The Button on the right (Grouped) */
+    .group-btn {
+      width: 38px; background-color: #f9fafb; border: 1px solid var(--border); border-left: 1px solid #e5e7eb;
+      border-top-right-radius: 6px; border-bottom-right-radius: 6px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: #64748b;
+    }
+    .group-btn:hover { background-color: #e0f2fe; color: var(--primary); border-color: #d1d5db; }
+    .group-btn svg { width: 15px; height: 15px; }
+
+    /* Merged Group (Same style) */
+    .merged-group { display: flex; width: 100%; align-items: stretch; }
+    .merged-group .input-box { flex: 1; }
+    .merged-group .input-box input { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
+    .merged-trigger {
+      width: 38px; background-color: #f9fafb; border: 1px solid var(--border); border-left: 1px solid #e5e7eb;
+      border-top-right-radius: 6px; border-bottom-right-radius: 6px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b;
+      position: relative; overflow: hidden; 
+    }
+    .merged-trigger:hover { background-color: #eff6ff; color: var(--info); }
+
+    /* Standard Inputs */
+    input, textarea, select { width: 100%; font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); }
+    textarea { resize: vertical; min-height: 60px; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+    input[readonly], textarea[readonly] { background-color: #e5e7eb; color: #6b7280; cursor: not-allowed; border-color: #d1d5db; }
+
+    /* Clear X Button */
+    .input-box { position: relative; }
+    .input-box input[type="text"], .input-box textarea { padding-right: 26px; }
+    .clear-x {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      font-size: 12px; color: #9ca3af; cursor: pointer; display: none; z-index: 5;
+      width: 16px; height: 16px; line-height: 15px; text-align: center; background: rgba(255,255,255,0.8); border-radius: 50%; font-weight: bold;
+    }
+    .clear-x:hover { color: #ef4444; background: #fee2e2; }
+    .input-box.has-val .clear-x { display: block; }
+    textarea + .clear-x { top: 12px; transform: none; }
+
+    /* --- Date Picker Fix --- */
+    .input-box.date-box input[type="text"] { padding-right: 26px; } 
+    
+    /* Independent Button Style (Price Save) */
+    .btn-icon-separate {
+      width: 36px; height: 35px; flex: 0 0 36px;
+      background-color: #f9fafb; border: 1px solid var(--border); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b;
+    }
+    .btn-icon-separate:hover { background-color: #e0f2fe; color: var(--primary); border-color: #d1d5db; }
+
+    /* Hidden Date Input */
+    .hidden-date-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+
+    /* Buttons */
+    .btn { border: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-family: inherit; }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
+    .btn-save { background: var(--success); color: white; border: 1px solid #059669; }
+    .btn-del { background: #fee2e2; color: var(--danger); border: 1px solid #f87171; }
+    .btn-edit { background: #eff6ff; color: var(--info); border: 1px solid #bfdbfe; }
+    .btn-backup { background: var(--warning); color: white; margin-right: 4px; }
+    .btn-restore { background: #9ca3af; color: white; }
+    .btn-addon { background: #e0f2fe; color: var(--primary); border: 1px solid #bae6fd; font-size: 11px; padding: 3px 8px; }
+    .btn-toggle { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+    .btn-toggle:hover { background: var(--primary); color: white; }
+
+    /* Icon Only Button (Plain) */
+    .btn-icon { padding: 6px; border-radius: 4px; background: transparent; color: #64748b; border: 1px solid transparent; }
+    .btn-icon:hover { background: #f3f4f6; color: var(--text-main); border-color: #e5e7eb; }
+
+    #client-details-wrapper, #payment-wrapper { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+    .status-msg { font-size: 10px; margin-top: 2px; height: 14px; display: block; }
+    .status-saved { color: #059669; } .status-exist { color: #d97706; }
+
+    .db-row { display: flex; gap: 0px; align-items: center; width: 100%; }
+    .db-row .input-box { flex: 1; }
+    .db-row .input-box input { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0; }
+    .db-row button { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid #bfdbfe; }
+
+    .item-grid-top { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 6px; margin-bottom: 6px; }
+    .item-grid-btm { display: grid; grid-template-columns: 0.8fr 1.5fr 1.1fr 1.1fr 0.9fr 1fr; gap: 6px; }
+
+    .addon-row-wrap { margin-top: 6px; padding-left: 12px; border-left: 2px solid #bae6fd; }
+    .addon-item { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; background: #f0f9ff; padding: 4px; border-radius: 4px; width: 100%; }
+    .addon-item .addon-desc-wrapper { flex: 1; min-width: 0; } 
+    .addon-item .addon-num-wrapper { flex: 0 0 60px; } 
+    .addon-item .addon-num-wrapper.wide { flex: 0 0 80px; } 
+    .addon-item input { width: 100%; font-size: 11px; padding: 4px 6px; height: 28px; }
+    .addon-item .input-box { width: 100%; }
+    .addon-item input[type="number"] { padding-right: 4px; }
+    .addon-item .clear-x { right: 24px; }
+
+    /* --- Bill Style --- */
+    .meta-val, .inv-box-content, .inv-table td, .info-text, .trade-name, .legal-name, .tax-id-line { text-transform: uppercase; }
+    .inv-header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid var(--primary); padding-bottom: 20px; align-items: flex-end; }
+    .inv-logo-text { font-size: 26px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+    .inv-addr { font-size: 12px; color: var(--text-sub); margin-top: 6px; line-height: 1.5; font-weight: 500; }
+    .inv-right { text-align: right; }
+    .inv-title { font-size: 36px; font-weight: 900; color: #e5e7eb; letter-spacing: 2px; line-height: 1; margin-bottom: 4px; }
+    .inv-subtitle { font-size: 14px; color: var(--text-sub); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 15px; }
+    .meta-horizontal { display: flex; gap: 24px; justify-content: flex-end; align-items: flex-end; }
+    .meta-group { text-align: right; }
+    .meta-label { font-size: 11px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+    .meta-val { font-size: 14px; font-weight: 700; color: var(--text-main); }
+    .box-container { display: flex; gap: 24px; margin-bottom: 30px; }
+    .inv-box { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; position: relative; background: #f9fafb; }
+    .inv-box.left { border-left: 5px solid var(--primary); }
+    .inv-box.right { border-left: 5px solid var(--accent); }
+    .box-label { font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 10px; letter-spacing: 0.5px; }
+    .box-label .en-sub { font-size: 10px; font-weight: 400; opacity: 0.8; margin-left: 4px; text-transform: uppercase; }
+    .box-content { font-size: 12px; line-height: 1.6; color: var(--text-main); }
+    .trade-name { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .legal-name { font-size: 12px; color: var(--text-main); font-weight: 600; margin-bottom: 4px; }
+    .legal-name.is-sub { font-size: 11px; color: var(--text-sub); font-weight: 400; }
+    .tax-id-line { font-size: 11px; color: var(--text-main); margin-bottom: 6px; }
+    .label-main { color: var(--text-sub); font-size: 11px; margin-right: 2px; font-weight: 600; }
+    .label-sub { color: #9ca3af; font-size: 9px; margin-right: 6px; }
+
+    .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; }
+    .inv-table th { background: var(--primary); color: white; padding: 12px 4px; font-size: 11px; text-align: right; font-weight: 700; overflow:hidden; }
+    .inv-table th:first-child { text-align: left; }
+    .inv-table th .th-sub { display: block; font-size: 8px; opacity: 0.7; font-weight: 400; text-transform: uppercase; margin-top: 2px; white-space:nowrap; }
+    .inv-table td { border-bottom: 1px solid #e5e7eb; padding: 10px 4px; font-size: 11px; vertical-align: top; line-height: 1.4; overflow-wrap: break-word; }
+    .inv-table .num { text-align: right; font-feature-settings: "tnum"; font-weight: 500; }
+    .inv-table tr:last-child td { border-bottom: 2px solid var(--primary); }
+    
+    /* ADDON STYLE (Italic + Gray) */
+    .row-addon td { 
+      border-bottom: 1px solid #f3f4f6; 
+      background: #fcfcfc; 
+      color: var(--text-sub);
+      font-style: italic; 
+    }
+    .inv-table tr.row-addon td.addon-desc { padding-left: 55px; position: relative; }
+    .inv-table tr.row-addon td.addon-desc::before { content: "↳"; position: absolute; left: 12px; opacity: 0.5; font-family: sans-serif; font-style: normal; }
+    
+    .text-red { color: var(--danger); }
+    .text-bold { font-weight: 700; color: #000; }
+    .comm-detail { font-size: 9px; color: #9ca3af; margin-top: 2px; line-height: 1; }
+
+    .inv-footer { display: flex; gap: 40px; margin-top: 10px; }
+    .footer-left { flex: 1; }
+    .footer-right { width: 320px; }
+    .info-block { margin-bottom: 20px; border-left: 3px solid #e5e7eb; padding-left: 12px; }
+    .info-title { font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+    .info-title .en-sub { font-size: 10px; font-weight: 400; color: var(--text-sub); margin-left: 4px; text-transform: uppercase; }
+    .info-text { font-size: 11px; line-height: 1.5; color: var(--text-main); white-space: pre-wrap; }
+
+    .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; color: var(--text-sub); }
+    .total-label { font-weight: 600; color: var(--text-sub); }
+    .total-label span { display: block; }
+    .total-label .en { font-size: 10px; opacity: 0.7; font-weight: 400; margin-top: 1px; }
+    .total-row.gross { border-top: 1px solid #e5e7eb; margin-top: 8px; padding-top: 10px; color: var(--text-main); }
+    .total-row.gross .total-label { font-weight: 700; color: var(--text-main); font-size: 13px; }
+    .total-row.comm { color: var(--danger); font-weight: 500; }
+    .total-row.comm .total-label { color: var(--danger); }
+    .net-box { background: var(--primary); color: white; padding: 14px 16px; border-radius: 6px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .net-title { font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .net-title .en { display: block; font-size: 10px; opacity: 0.8; text-transform: uppercase; font-weight: 400; margin-top: 2px; }
+    .net-val { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+
+    @media print {
+      @page { size: A4; margin: 0; }
+      html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: white; }
+      .pane-form, .toolbar { display: none !important; }
+      .pane-preview { border: none; height: auto; display: block; background: white; position: relative; width: 100%; }
+      .preview-scroll-area { padding: 0; margin: 0; background: white; overflow: visible; display: block; }
+      .paper { width: 100% !important; max-width: none !important; height: auto !important; box-shadow: none !important; padding: 30px 40px !important; margin: 0 !important; transform: none !important; border: none !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="pane-preview">
+    <div class="toolbar">
+      <h1>分销账单 V7.1 - 符号旅游</h1>
+      <div>
+        <button class="btn btn-backup" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 备份数据 Backup</button>
+        <button class="btn btn-restore" onclick="document.getElementById('importFile').click()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 恢复数据 Restore</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(this)" accept=".json">
+        <span style="border-left:1px solid #d1d5db; margin:0 8px; height:16px; display:inline-block; vertical-align:middle;"></span>
+        <button class="btn btn-outline" onclick="resetForm()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> 重置 Reset</button>
+        <button class="btn btn-primary" onclick="printBill()"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> 打印 / PDF Print</button>
+      </div>
+    </div>
+    <div class="preview-scroll-area">
+      <div class="paper" id="invoice-paper">
+        <div class="inv-header">
+          <div style="flex:1">
+            <div class="inv-logo-text"><span data-bind="agencyName">符号旅游 FH GLOBAL, S.L.</span></div>
+            <div class="inv-addr" data-bind="agencyAddress" data-format="multiline"></div>
+            <div class="inv-addr" data-bind="agencyContact" data-format="multiline"></div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-title">账单 BILL</div>
+            <div class="inv-subtitle"> </div>
+            <div class="meta-horizontal">
+              <div class="meta-group"><div class="meta-label">编号 Exp #</div><div class="meta-val" data-bind="invNo"></div></div>
+              <div class="meta-group"><div class="meta-label">日期 Date</div><div class="meta-val" id="pv-invDate-formatted"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box-container">
+          <div class="inv-box left">
+            <div class="box-label">客户信息 <span class="en-sub">Bill To</span></div>
+            <div class="box-content">
+              <div class="trade-name" data-bind="billTradeName"></div>
+              <div id="pv-billCompany" class="legal-name"></div>
+              <div id="pv-billTaxId" class="tax-id-line"></div>
+              <div style="margin-top:4px; white-space: pre-wrap;" data-bind="billAddress" data-format="multiline"></div>
+            </div>
+          </div>
+          <div class="inv-box right">
+            <div class="box-label">航次信息 <span class="en-sub">Cruise Details</span></div>
+            <div class="box-content">
+              <div style="margin-bottom:4px"><span class="label-main">船名</span><span class="label-sub">SHIP</span><strong data-bind="ship"></strong></div>
+              <div style="margin-bottom:4px"><span class="label-main">航线</span><span class="label-sub">ROUTE</span><span data-bind="route"></span></div>
+              <div style="margin-bottom:4px"><span class="label-main">航期</span><span class="label-sub">SAILING</span><span id="pv-sailing-combined"></span></div>
+              <div><span class="label-main">预订号</span><span class="label-sub">REF NO</span><span data-bind="ref"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th style="width: 24%">舱房说明 <span class="th-sub">Cabin Description</span></th>
+              <th class="num" style="width: 8%">人数/数量 <span class="th-sub">PAX</span></th>
+              <th class="num" style="width: 13%">直客价 <span class="th-sub">Gross Price</span></th>
+              <th class="num" style="width: 11%">船票基价 <span class="th-sub">Base Fare</span></th>
+              <th class="num" style="width: 11%">佣金 <span class="th-sub">Commission</span></th>
+              <th class="num" style="width: 9%">税费 <span class="th-sub">Tax</span></th>
+              <th class="num" style="width: 9%">服务费 <span class="th-sub">HSC</span></th>
+              <th class="num" style="width: 15%">结算价 <span class="th-sub">Net Payable</span></th>
+            </tr>
+          </thead>
+          <tbody id="preview-items-body"></tbody>
+        </table>
+
+        <div class="inv-footer">
+          <div class="footer-left">
+            <div class="info-block" style="border-left-color: var(--primary);">
+              <div class="info-title">支付方式 <span class="en-sub">Payment Details</span></div>
+              <div class="info-text" data-bind="payment" data-format="multiline"></div>
+            </div>
+            <div class="info-block" style="border-left-color: var(--accent);">
+              <div class="info-title">备注条款 <span class="en-sub">Remarks</span></div>
+              <div class="info-text" data-bind="remarks" data-format="multiline"></div>
+            </div>
+          </div>
+          <div class="footer-right">
+            <div class="total-row"><div class="total-label">直客总价<span class="en">Total Gross Price</span></div><div id="display-gross">0.00</div></div>
+            <div class="total-row"><div class="total-label">税费服务费总额<span class="en">Total Taxes & HSC</span></div><div id="display-total-tax-hsc">0.00</div></div>
+            <div class="total-row"><div class="total-label">船票总基价<span class="en">Total Base Fare</span></div><div id="display-total-base">0.00</div></div>
+            <div class="total-row comm"><div class="total-label">减: 佣金<span class="en">Less Commission</span></div><div id="display-commission">- 0.00</div></div>
+            <div class="net-box"><div class="net-title">实付结算价 <span class="en">Net Payable (EUR)</span></div><div class="net-val" id="display-net">0.00</div></div>
+          </div>
+        </div>
+        
+        <div style="margin-top:auto; padding-top:20px; border-top:1px solid #eee; text-align:center; font-size:10px; color:#9ca3af;">
+          FH GLOBAL S.L. with NIF: B72398340. Paseo Quince De Mayo 3, 28019 Madrid.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane-form">
+    <div class="form-header"><h2>账单录入 Edit Bill</h2></div>
+    <div class="form-scroll-area">
+      <div class="form-group">
+        <div class="form-title">基础信息 Basic Info</div>
+        <div class="row"><div class="col"><label>编号 Exp No.</label><div class="input-box"><input type="text" id="invNo" placeholder="EXP-2024-001" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div><div class="col"><label>日期 Date</label><div class="input-box"><input type="date" id="invDate" oninput="checkClear(this)"></div></div></div>
+      </div>
+      <div style="display:none">
+        <input type="text" id="agencyName" value="符号旅游 FH GLOBAL, S.L."><textarea id="agencyAddress">PASEO QUINCE DE MAYO 3, 28019 MADRID</textarea><textarea id="agencyContact">Tel: +34 919471812 | fhglobal@fhglobal.es</textarea><input type="text" id="currency" value="EUR">
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">客户信息 Client Info</div>
+        <div class="input-group" style="margin-bottom: 10px;">
+           <select id="clientSelect" onchange="selectClient()"><option value="">-- 选择常用客户 Select Client --</option></select>
+           <div class="group-btn" onclick="toggleClientDetails()" title="编辑/新增"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+        </div>
+        
+        <div id="client-details-wrapper">
+          <div class="row">
+            <div class="col"><label>商用名称 Trade Name</label><div class="input-box"><input type="text" id="billTradeName" placeholder="Ctrip / 携程" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
+            <div class="col-sm"><label>佣金% Comm</label><div class="input-box"><input type="number" id="billDefaultRate" value="0"></div></div>
+            <div class="col-sm"><label>附加佣金% Addon</label><div class="input-box"><input type="number" id="billAddonRate" value="0"></div></div>
+          </div>
+          <div class="row"><div class="col"><label>公司注册名称 Legal Name</label><div class="input-box"><input type="text" id="billCompany" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>税号 CIF / VAT No.</label><div class="input-box"><input type="text" id="billTaxId" placeholder="e.g. ES12345678" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>地址 Address</label><div class="input-box"><textarea id="billAddress" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div style="text-align:right; margin-top:10px;">
+             <button class="btn btn-sm btn-outline" onclick="toggleClientDetails()">收起 Hide</button>
+             <button class="btn btn-sm btn-save" onclick="saveClient()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> 保存 Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">航次信息 Cruise Info</div>
+        <div class="row">
+            <div class="col"><label>船名 Ship</label><div class="merged-group"><div class="input-box"><input type="text" id="ship" list="shipList" placeholder="" onblur="autoSaveShip(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editShip()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="shipList"></datalist></div><span id="msg-ship" class="status-msg"></span></div>
+            <div class="col"><label>航线 Route</label><div class="merged-group"><div class="input-box"><input type="text" id="route" list="routeList" placeholder="" onblur="autoSaveRoute(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editRoute()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="routeList"></datalist></div><span id="msg-route" class="status-msg"></span></div>
+        </div>
+        <div class="row">
+            <div class="col"><label>出发 Start</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingStart" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerStart')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerStart" class="hidden-date-overlay" onchange="pickDate(this, 'sailingStart')"></div></div></div>
+            <div class="col"><label>结束 End</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingEnd" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerEnd')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerEnd" class="hidden-date-overlay" onchange="pickDate(this, 'sailingEnd')"></div></div></div>
+            <div class="col"><label>预订号 Ref No.</label><div class="input-box"><input type="text" id="ref" value="" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="border-color:#fca5a5; background:#fff1f2;">
+        <div class="form-title" style="color:#b91c1c;"><span>费用明细 Items</span><div><button class="btn btn-primary btn-sm" onclick="addItem()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 添加舱房 Add Cabin</button></div></div>
+        <datalist id="dl-types"></datalist><datalist id="dl-exps"></datalist><datalist id="dl-prices"></datalist><datalist id="dl-addons"></datalist>
+        <div id="items-container"></div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">
+          <span>支付与备注 Payment & Notes</span>
+          <button class="btn btn-sm btn-toggle" onclick="togglePayment()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 查看/编辑 Show/Edit</button>
+        </div>
+        <div id="payment-wrapper">
+          <div class="row"><div class="col"><label>支付信息 Payment</label><div class="input-box"><textarea id="payment" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>备注 Remarks</label><div class="input-box"><textarea id="remarks" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      <div style="height:30px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'cruise_bill_fh_global_db_v71';
+  const CLIENTS_KEY = 'cruise_bill_clients_db_v71';
+  const SHIPS_KEY = 'cruise_bill_ships_db_v71';
+  const ROUTES_KEY = 'cruise_bill_routes_db_v71';
+  const DB_TYPES_KEY = 'cruise_db_types_v1';
+  const DB_EXPS_KEY = 'cruise_db_exps_v1';
+  const DB_PRICES_KEY = 'cruise_db_prices_v1';
+  const DB_ADDONS_KEY = 'cruise_db_addons_v1';
+  
+  const DEFAULT_PAYMENT = "Bank: CAIXABANK\nName: FH GLOBAL, S.L.\nSWIFT: CAIXESBBXXX\nAccount: ES4521003304042200150167";
+  const DEFAULT_REMARKS = "请在账单生成后24个小时内付款。\nPlease settle the payment within 24 hours";
+  const defaultItem = { name: "", type: "", exp: "", price: "", qty: "", base: "", tax: "", hsc: "", rate: "", extra: "", addons: [] };
+  
+  const mscShips = ["MSC 欧罗巴号 MSC World Europa", "MSC 美洲号 MSC World America", "MSC 欧瑞比亚号 MSC Euribia", "MSC 华彩号 MSC Virtuosa", "MSC 鸿图号 MSC Grandiosa", "MSC 荣耀号 MSC Bellissima", "MSC 传奇号 MSC Meraviglia", "MSC 海神号 MSC Seascape", "MSC 海际号 MSC Seashore", "MSC 海景号 MSC Seaview", "MSC 海岸线号 MSC Seaside", "MSC 珍爱号 MSC Preziosa", "MSC 神曲号 MSC Divina", "MSC 辉煌号 MSC Splendida", "MSC 幻想曲号 MSC Fantasia", "MSC 华丽号 MSC Magnifica", "MSC 诗歌号 MSC Poesia", "MSC 管乐号 MSC Orchestra", "MSC 音乐号 MSC Musica", "MSC 歌剧号 MSC Opera", "MSC 抒情号 MSC Lirica", "MSC 序曲号 MSC Sinfonia", "MSC 和谐号 MSC Armonia"];
+  const costaShips = ["歌诗达·托斯卡纳号 Costa Toscana", "歌诗达·翡翠号 Costa Smeralda", "歌诗达·皇冠号 Costa Diadema", "歌诗达·迷人号 Costa Fascinosa", "歌诗达·唯美号 Costa Favolosa", "歌诗达·狄利摩萨号 Costa Deliziosa", "歌诗达·太平洋号 Costa Pacifica", "歌诗达·赛琳娜号 Costa Serena", "歌诗达·幸运号 Costa Fortuna"];
+  const defaultRoutes = ["地中海航线 (The Mediterranean)", "北欧航线 (Northern Europe)", "加勒比海与北美航线 (Caribbean & North America)", "中东航线 (Middle East)", "南美航线 (South America)", "长航线与环球 (Grand Voyages & World Cruise)"];
+  const defaultAddons = ["Wifi Package (网络包)", "Shore Excursion (岸上观光)", "Drink Package (酒水)", "Service Charge (服务费)", "Transfer (接送)"];
+  const preloadedClients = [
+    { tradeName: "环球之旅", company: "DYNASTY TICKETING Kft.", taxId: "26542003242", address: "Csepreghy utca 4. 2. em. 13. ajtó Budapest, Budapest főváros, 1085 Hungary", rate: 5, addonRate: 5 },
+    { tradeName: "蓝天旅行社", company: "VIAJES ANDY, S.L.", taxId: "B86105301", address: "Avenida Oporto, 108, 28019 Madrid", rate: 15, addonRate: 0 },
+    { tradeName: "长城旅行社", company: "VIAJES GRAN MURALLA, S.L.", taxId: "B85644490", address: "Calle Nicolas Sanchez, 41, 28026 Madrid", rate: 15, addonRate: 0 },
+    { tradeName: "中天旅行社", company: "VIAJES DESPEJADO, S.L.", taxId: "B84988948", address: "Calle Nicolas Sanchez, 6, 28026 Madrid", rate: 15, addonRate: 0 },
+    { tradeName: "环球旅行社", company: "GRAN ASIA TOUR, S.L.", taxId: "B84962927", address: "Calle Dolores Barranco, 49, 28026 Madrid", rate: 10, addonRate: 3 },
+    { tradeName: "凯越旅行社", company: "FREEMAN TRAVEL CO, S.L.", taxId: "B56487168", address: "Calle de Gabino Jimeno, 15, 28026 Madrid", rate: 10, addonRate: 3 }
+  ];
+
+  let items = [], clients = [], ships = [], routes = [];
+  let dbTypes = [], dbExps = [], dbPrices = [], dbAddons = [];
+
+  const formatMoney = (amount) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+
+  function checkClear(input) {
+      const box = input.closest('.input-box');
+      if (input.value && input.value.trim() !== '') box.classList.add('has-val');
+      else box.classList.remove('has-val');
+      if(input.id !== 'ship' && input.id !== 'route') updateState();
+  }
+  
+  function clearField(span) {
+      const box = span.closest('.input-box');
+      const input = box.querySelector('input, textarea');
+      input.value = '';
+      box.classList.remove('has-val');
+      input.focus();
+      const evt = new Event('input', { bubbles: true });
+      input.dispatchEvent(evt);
+      if(input.id === 'ship') autoSaveShip(input);
+      if(input.id === 'route') autoSaveRoute(input);
+      if(input.id === 'sailingStart' || input.id === 'sailingEnd') updateState();
+  }
+
+  function toggleClientDetails() {
+    const wrapper = document.getElementById('client-details-wrapper');
+    wrapper.style.display = (wrapper.style.display === 'none' || wrapper.style.display === '') ? 'block' : 'none';
+  }
+
+  function togglePayment() {
+    const wrapper = document.getElementById('payment-wrapper');
+    wrapper.style.display = (wrapper.style.display === 'none' || wrapper.style.display === '') ? 'block' : 'none';
+  }
+
+  function openPicker(pickerId) {
+    try { document.getElementById(pickerId).showPicker(); } catch(e) { document.getElementById(pickerId).focus(); }
+  }
+  function pickDate(picker, textId) {
+    const val = picker.value; 
+    if(val) {
+        const [y, m, d] = val.split('-');
+        const textInput = document.getElementById(textId);
+        textInput.value = `${d}/${m}/${y}`;
+        updateState();
+        checkClear(textInput);
+    }
+  }
+
+  function editShip() { editDatabaseItem('ship', ships, SHIPS_KEY, 'shipList'); }
+  function editRoute() { editDatabaseItem('route', routes, ROUTES_KEY, 'routeList'); }
+  function editDatabaseItem(inputId, dbArray, storageKey, listId) {
+      const input = document.getElementById(inputId);
+      const oldVal = input.value;
+      if (!oldVal) return;
+      const idx = dbArray.findIndex(item => item.toLowerCase() === oldVal.toLowerCase());
+      if (idx === -1) { alert("数据库中未找到该项 (Entry not found in DB)"); return; }
+      const newVal = prompt("编辑名称 Edit Name:", dbArray[idx]);
+      if (newVal && newVal.trim() !== "" && newVal !== dbArray[idx]) {
+          dbArray[idx] = newVal.trim();
+          localStorage.setItem(storageKey, JSON.stringify(dbArray));
+          renderDatalist(listId, dbArray);
+          input.value = newVal.trim();
+          const msgId = inputId === 'ship' ? 'msg-ship' : 'msg-route';
+          const msgEl = document.getElementById(msgId);
+          if(msgEl) { msgEl.textContent = "✅ 已更新 Updated"; msgEl.className = "status-msg status-saved"; }
+          updateState();
+      }
+  }
+
+  function autoSaveShip(input) { handleAutoSave(input, ships, SHIPS_KEY, 'shipList', 'msg-ship'); }
+  function autoSaveRoute(input) { handleAutoSave(input, routes, ROUTES_KEY, 'routeList', 'msg-route'); }
+  function handleAutoSave(input, dbArray, key, listId, msgId) {
+      const val = input.value.trim();
+      const msgEl = document.getElementById(msgId);
+      if (!val) { msgEl.textContent = ''; return; }
+      const exists = dbArray.some(item => item.toLowerCase() === val.toLowerCase());
+      if (exists) {
+          msgEl.textContent = "✅ 已存在 Existing"; msgEl.className = "status-msg status-exist";
+      } else {
+          dbArray.push(val); localStorage.setItem(key, JSON.stringify(dbArray));
+          renderDatalist(listId, dbArray);
+          msgEl.textContent = "💾 已保存 Saved"; msgEl.className = "status-msg status-saved";
+      }
+      updateState();
+  }
+
+  function handleSmartKey(e, input) { if(e.key === 'Enter') input.blur(); }
+  function smartComplete(input, db, index, key) {
+    const val = input.value.trim().toLowerCase(); if(!val) { updateItem(index, key, ""); return; }
+    const match = db.find(item => { const lower = item.toLowerCase(); return lower.startsWith(val) || lower.includes(" " + val) || lower.includes("(" + val); });
+    if(match) { input.value = match; updateItem(index, key, match); } else updateItem(index, key, input.value);
+    checkClear(input);
+  }
+  
+  function autoSaveItemDB(input, dbArray, key, listId) {
+    const val = input.value.trim();
+    if(!val) return;
+    const exists = dbArray.some(item => item.toLowerCase() === val.toLowerCase());
+    if(!exists) {
+        dbArray.push(val);
+        localStorage.setItem(key, JSON.stringify(dbArray));
+        renderDatalist(listId, dbArray);
+    }
+  }
+
+  function editItemDb(index, field, dbArray, key, listId) {
+      const oldVal = items[index][field];
+      if(!oldVal) return;
+      const dbIdx = dbArray.findIndex(item => item.toLowerCase() === oldVal.toLowerCase());
+      const newVal = prompt("编辑/修改 Edit " + field + ":", oldVal);
+      if(newVal && newVal.trim() !== "") {
+          if(dbIdx !== -1) {
+              dbArray[dbIdx] = newVal.trim();
+              localStorage.setItem(key, JSON.stringify(dbArray));
+              renderDatalist(listId, dbArray);
+          }
+          items[index][field] = newVal.trim();
+          renderItemInputs(); 
+          updateState();
+      }
+  }
+  
+  function editAddonDb(itemIndex, addonIndex, dbArray, key, listId) {
+      const oldVal = items[itemIndex].addons[addonIndex].desc;
+      if(!oldVal) return;
+      const dbIdx = dbArray.findIndex(item => item.toLowerCase() === oldVal.toLowerCase());
+      const newVal = prompt("编辑/修改 Edit Add-on Name:", oldVal);
+      if(newVal && newVal.trim() !== "") {
+          if(dbIdx !== -1) {
+              dbArray[dbIdx] = newVal.trim();
+              localStorage.setItem(key, JSON.stringify(dbArray));
+              renderDatalist(listId, dbArray);
+          }
+          items[itemIndex].addons[addonIndex].desc = newVal.trim();
+          renderItemInputs(); 
+          updateState();
+      }
+  }
+
+  function smartCompleteAddon(input, rowIndex, addonIndex) {
+    const val = input.value.trim().toLowerCase(); const db = dbAddons;
+    if(!val) { items[rowIndex].addons[addonIndex].desc = ""; updateState(); return; }
+    const match = db.find(item => { const lower = item.toLowerCase(); return lower.startsWith(val) || lower.includes(" " + val) || lower.includes("(" + val); });
+    if(match) input.value = match; items[rowIndex].addons[addonIndex].desc = input.value; updateState();
+    checkClear(input);
+  }
+  function handleDateKey(e, input) { if(e.key === 'Enter') input.blur(); }
+  function smartDateInput(input) {
+    const val = input.value.trim(); if(!val) { updateState(); return; }
+    const now = new Date(); let d, m, y;
+    const parts = val.replace(/[.-]/g, '/').split('/');
+    if(parts.length === 1) { d=parseInt(parts[0]); m=now.getMonth()+1; y=now.getFullYear(); }
+    else if(parts.length === 2) { d=parseInt(parts[0]); m=parseInt(parts[1]); y=now.getFullYear(); }
+    else if(parts.length === 3) { d=parseInt(parts[0]); m=parseInt(parts[1]); y=parseInt(parts[2]); if(y<100) y+=2000; }
+    else return;
+    if(isNaN(d)||isNaN(m)||isNaN(y)) return;
+    input.value = `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+    checkClear(input);
+    updateState();
+  }
+  function parseDateStr(str) { if(!str) return null; const parts = str.split('/'); if(parts.length !== 3) return null; return new Date(parts[2], parts[1]-1, parts[0]); }
+
+  // MODIFIED PRINT FUNCTION FOR AUTOMATIC FILENAME
+  function printBill() {
+      const invNo = document.getElementById('invNo').value.trim();
+      const oldTitle = document.title;
+      if (invNo) {
+          document.title = `【分销账单 ${invNo}】`;
+      } else {
+          document.title = `【分销账单】`;
+      }
+      window.print();
+      setTimeout(() => { document.title = oldTitle; }, 500);
+  }
+
+  function exportData() {
+    const saveData = { clients, ships, routes, dbTypes, dbExps, dbPrices, dbAddons, currentBill: JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}') };
+    const blob = new Blob([JSON.stringify(saveData,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=`FH_Global_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+  }
+  function importData(input) {
+    const file = input.files[0]; if(!file) return;
+    const reader = new FileReader(); reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if(data.clients) { clients=data.clients; localStorage.setItem(CLIENTS_KEY,JSON.stringify(clients)); }
+        if(data.ships) { ships=data.ships; localStorage.setItem(SHIPS_KEY,JSON.stringify(ships)); }
+        if(data.routes) { routes=data.routes; localStorage.setItem(ROUTES_KEY,JSON.stringify(routes)); }
+        if(data.dbTypes) { dbTypes=data.dbTypes; localStorage.setItem(DB_TYPES_KEY,JSON.stringify(dbTypes)); }
+        if(data.dbExps) { dbExps=data.dbExps; localStorage.setItem(DB_EXPS_KEY,JSON.stringify(dbExps)); }
+        if(data.dbPrices) { dbPrices=data.dbPrices; localStorage.setItem(DB_PRICES_KEY,JSON.stringify(dbPrices)); }
+        if(data.dbAddons) { dbAddons=data.dbAddons; localStorage.setItem(DB_ADDONS_KEY,JSON.stringify(dbAddons)); }
+        if(data.currentBill) { localStorage.setItem(STORAGE_KEY,JSON.stringify(data.currentBill)); loadData(); }
+        renderClientSelect(); renderAllDatalists(); alert("已恢复 Restored!");
+      } catch(err) { alert("错误 Error"); }
+    }; reader.readAsText(file); input.value='';
+  }
+
+  function loadAuxDB() {
+    const rawShips = localStorage.getItem(SHIPS_KEY);
+    if(rawShips) { ships = JSON.parse(rawShips); } else { ships = [ "━━━ MSC CRUISES ━━━", ...mscShips, "━━━ COSTA CRUISES ━━━", ...costaShips ]; localStorage.setItem(SHIPS_KEY, JSON.stringify(ships)); }
+    const rawRoutes = localStorage.getItem(ROUTES_KEY);
+    if(rawRoutes) routes = JSON.parse(rawRoutes); else { routes = defaultRoutes; localStorage.setItem(ROUTES_KEY, JSON.stringify(routes)); }
+    dbTypes = JSON.parse(localStorage.getItem(DB_TYPES_KEY)||'["Interior (内舱)", "Oceanview (海景)", "Balcony (阳台)"]');
+    dbExps = JSON.parse(localStorage.getItem(DB_EXPS_KEY)||'["Bella (贝拉)", "Fantastica (梦幻)"]');
+    dbPrices = JSON.parse(localStorage.getItem(DB_PRICES_KEY)||'["Basic (基础)", "Special (特价)"]');
+    const rawAddons = localStorage.getItem(DB_ADDONS_KEY);
+    if(rawAddons) dbAddons = JSON.parse(rawAddons); else { dbAddons = defaultAddons; localStorage.setItem(DB_ADDONS_KEY, JSON.stringify(dbAddons)); }
+    renderAllDatalists();
+  }
+  function renderAllDatalists() {
+    renderDatalist('shipList', ships); renderDatalist('routeList', routes);
+    renderDatalist('dl-types', dbTypes); renderDatalist('dl-exps', dbExps); renderDatalist('dl-prices', dbPrices); renderDatalist('dl-addons', dbAddons);
+  }
+  function renderDatalist(id, arr) { const dl = document.getElementById(id); dl.innerHTML=''; arr.forEach(val => { const opt=document.createElement('option'); opt.value=val; dl.appendChild(opt); }); }
+  function saveToDB(arr, val, key, listId) { val=val.trim(); if(!val||arr.includes(val)) return; arr.push(val); localStorage.setItem(key,JSON.stringify(arr)); renderDatalist(listId,arr); }
+  function deleteFromDB(arr, val, key, listId) { val=val.trim(); const idx=arr.indexOf(val); if(idx>-1&&confirm("是否删除？ Delete?")) { arr.splice(idx,1); localStorage.setItem(key,JSON.stringify(arr)); renderDatalist(listId,arr); } }
+  function saveCabinAttributes(idx) {
+    const item = items[idx]; let count=0;
+    if(item.type && !dbTypes.includes(item.type)) { saveToDB(dbTypes, item.type, DB_TYPES_KEY, 'dl-types'); count++; }
+    if(item.exp && !dbExps.includes(item.exp)) { saveToDB(dbExps, item.exp, DB_EXPS_KEY, 'dl-exps'); count++; }
+    if(item.price && !dbPrices.includes(item.price)) { saveToDB(dbPrices, item.price, DB_PRICES_KEY, 'dl-prices'); count++; }
+    if(item.addons && item.addons.length > 0) { items.forEach(i => { if(i.addons) i.addons.forEach(ad => { if(ad.desc && !dbAddons.includes(ad.desc)) { saveToDB(dbAddons, ad.desc, DB_ADDONS_KEY, 'dl-addons'); count++; } }); }); }
+    if(count>0) alert(`${count} new items saved!`); else alert("No new terms.");
+  }
+
+  function loadClients() { 
+    const json = localStorage.getItem(CLIENTS_KEY);
+    if(json) { clients = JSON.parse(json); } else { clients = preloadedClients; localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients)); }
+    renderClientSelect(); 
+  }
+  function renderClientSelect() {
+    const sel=document.getElementById('clientSelect'); sel.innerHTML='<option value="">-- 选择常用客户 Select Client --</option>';
+    clients.forEach((c,i)=>{ const label=c.tradeName?`${c.tradeName} (${c.company})`:c.company; const opt=document.createElement('option'); opt.value=i; opt.text=label; sel.appendChild(opt); });
+  }
+  function saveClient() {
+    const company=document.getElementById('billCompany').value.trim(); if(!company) return alert("Missing Company Name");
+    const newClient={ tradeName:document.getElementById('billTradeName').value, company, address:document.getElementById('billAddress').value, rate:document.getElementById('billDefaultRate').value||0, addonRate:document.getElementById('billAddonRate').value||0, taxId:document.getElementById('billTaxId').value || '' };
+    const idx=clients.findIndex(c=>c.company===company); if(idx>=0){if(confirm("更新客户信息？ Update?")) clients[idx]=newClient; else return;} else clients.push(newClient);
+    localStorage.setItem(CLIENTS_KEY,JSON.stringify(clients)); renderClientSelect(); alert("已保存 Saved!");
+  }
+  function deleteClient() { /* Removed */ }
+  
+  function selectClient() {
+    const idx=document.getElementById('clientSelect').value; if(idx==="") return;
+    const c=clients[idx]; 
+    document.getElementById('billTradeName').value=c.tradeName||''; document.getElementById('billCompany').value=c.company; document.getElementById('billAddress').value=c.address; document.getElementById('billDefaultRate').value=c.rate||0; document.getElementById('billAddonRate').value=c.addonRate||0; document.getElementById('billTaxId').value=c.taxId||'';
+    ['billTradeName','billCompany','billAddress','billDefaultRate','billTaxId','billAddonRate'].forEach(id => checkClear(document.getElementById(id)));
+    const newRate=Number(c.rate)||0; const newAddonRate=Number(c.addonRate)||0;
+    if(items.length>0){ items.forEach(i=> { i.rate=newRate; if(i.addons) i.addons.forEach(a=>a.rate=newAddonRate); }); renderItemInputs(); }
+    defaultItem.rate=newRate; updateState();
+  }
+
+  function renderItemInputs() {
+    const container = document.getElementById('items-container'); container.innerHTML = '';
+    items.forEach((item, index) => {
+      let addonsHtml = '';
+      if(item.addons && item.addons.length > 0) {
+          item.addons.forEach((ad, aIdx) => {
+              addonsHtml += `
+                <div class="addon-item">
+                   <span style="font-size:10px; color:#0ea5e9;">↳</span>
+                   <div class="addon-desc-wrapper">
+                      <div class="merged-group">
+                        <div class="input-box">
+                            <input type="text" list="dl-addons" placeholder="附加产品名称 Add-on Name" value="${ad.desc}" onblur="smartCompleteAddon(this, ${index}, ${aIdx}); autoSaveItemDB(this, dbAddons, DB_ADDONS_KEY, 'dl-addons')" onkeypress="handleSmartKey(event, this)" oninput="checkClear(this)">
+                            <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+                        </div>
+                        <div class="merged-trigger" onclick="editAddonDb(${index}, ${aIdx}, dbAddons, DB_ADDONS_KEY, 'dl-addons')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+                      </div>
+                   </div>
+                   <div class="addon-num-wrapper"><input type="number" placeholder="数量 Qty" value="${ad.qty}" oninput="updateAddon(${index}, ${aIdx}, 'qty', this.value)"></div>
+                   <div class="addon-num-wrapper wide"><input type="number" placeholder="单价 Unit" value="${ad.amount}" oninput="updateAddon(${index}, ${aIdx}, 'amount', this.value)"></div>
+                   <div class="addon-num-wrapper"><input type="number" placeholder="佣金% Comm" value="${ad.rate}" oninput="updateAddon(${index}, ${aIdx}, 'rate', this.value)" title="Comm %"></div>
+                   <div class="addon-col-del"><span style="color:#ef4444; cursor:pointer; font-size:12px;" onclick="removeAddon(${index}, ${aIdx})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+                </div>`;
+          });
+      }
+      const div = document.createElement('div');
+      div.style.cssText = "background:white; border:1px solid #e5e7eb; border-radius:4px; padding:10px; margin-bottom:10px;";
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+           <span style="font-weight:700; color:#b91c1c; font-size:11px;">#${index + 1}</span>
+           <div>
+              <button class="btn btn-icon" onclick="copyItem(${index})"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button><button class="btn btn-icon" style="color:#dc2626" onclick="deleteItem(${index})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
+        </div>
+        <div style="margin-bottom:6px;">
+           <div class="input-box"><input type="text" placeholder="旅客姓名" value="${item.name||''}" oninput="updateItem(${index}, 'name', this.value);checkClear(this)" style="font-weight:bold;"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+        </div>
+        <div class="item-grid-top">
+           <div class="merged-group">
+              <div class="input-box"><input type="text" list="dl-types" placeholder="舱房类型" value="${item.type||''}" onblur="smartComplete(this, dbTypes, ${index}, 'type'); autoSaveItemDB(this, dbTypes, DB_TYPES_KEY, 'dl-types')" onkeypress="handleSmartKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              <div class="merged-trigger" onclick="editItemDb(${index}, 'type', dbTypes, DB_TYPES_KEY, 'dl-types')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+           </div>
+           <div class="merged-group">
+              <div class="input-box"><input type="text" list="dl-exps" placeholder="体验类型" value="${item.exp||''}" onblur="smartComplete(this, dbExps, ${index}, 'exp'); autoSaveItemDB(this, dbExps, DB_EXPS_KEY, 'dl-exps')" onkeypress="handleSmartKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              <div class="merged-trigger" onclick="editItemDb(${index}, 'exp', dbExps, DB_EXPS_KEY, 'dl-exps')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+           </div>
+           <div class="merged-group">
+              <div class="input-box"><input type="text" list="dl-prices" placeholder="价格类型" value="${item.price||''}" onblur="smartComplete(this, dbPrices, ${index}, 'price'); autoSaveItemDB(this, dbPrices, DB_PRICES_KEY, 'dl-prices')" onkeypress="handleSmartKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              <div class="merged-trigger" onclick="editItemDb(${index}, 'price', dbPrices, DB_PRICES_KEY, 'dl-prices')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+           </div>
+        </div>
+        <div class="item-grid-btm">
+          <div><label>人数 PAX</label><div class="input-box"><input type="number" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)"></div></div>
+          <div><label>直客价 Gross</label><div class="input-box"><input type="number" value="${item.base}" oninput="updateItem(${index}, 'base', this.value)"></div></div>
+          <div><label>税费 Tax</label><div class="input-box"><input type="number" value="${item.tax}" oninput="updateItem(${index}, 'tax', this.value)"></div></div>
+          <div><label>服务费 HSC</label><div class="input-box"><input type="number" value="${item.hsc}" oninput="updateItem(${index}, 'hsc', this.value)"></div></div>
+          <div><label>佣金% Rate</label><div class="input-box"><input type="number" value="${item.rate}" oninput="updateItem(${index}, 'rate', this.value)" placeholder="比例"></div></div>
+          <div><label>额外 Extra</label><div class="input-box"><input type="number" value="${item.extra}" oninput="updateItem(${index}, 'extra', this.value)" placeholder="金额"></div></div>
+        </div>
+        <div class="addon-row-wrap">${addonsHtml}<button class="btn btn-addon" onclick="addAddon(${index})">➕ 附加产品 Add-on</button></div>
+      `;
+      container.appendChild(div);
+      div.querySelectorAll('.input-box input, .input-box textarea').forEach(inp => checkClear(inp));
+    });
+  }
+
+  function updateItem(index, key, val) { items[index][key] = val; updateState(); }
+  function addAddon(idx) { const rate = document.getElementById('billAddonRate').value || 0; if(!items[idx].addons) items[idx].addons = []; items[idx].addons.push({ desc: "", amount: 0, rate: rate, qty: 1 }); renderItemInputs(); updateState(); }
+  function removeAddon(idx, aIdx) { items[idx].addons.splice(aIdx, 1); renderItemInputs(); updateState(); }
+  function updateAddon(idx, aIdx, key, val) { items[idx].addons[aIdx][key] = val; updateState(); }
+  function addItem() { const rate = document.getElementById('billDefaultRate').value || 0; items.push({ ...defaultItem, rate, addons: [] }); renderItemInputs(); updateState(); }
+  function deleteItem(i) { if(confirm('是否删除 Delete?')) { items.splice(i, 1); renderItemInputs(); updateState(); } }
+  function copyItem(i) { items.splice(i+1, 0, JSON.parse(JSON.stringify(items[i]))); renderItemInputs(); updateState(); }
+
+  function updateState() {
+    document.querySelectorAll('[id]').forEach(el => {
+      if(el.closest('.pane-form') && !el.closest('#items-container') && !['clientSelect','sailingStart','sailingEnd'].includes(el.id)) {
+        const target = document.querySelector(`[data-bind="${el.id}"]`);
+        if(el.id === 'billCompany') {
+             const tradeNameVal = document.getElementById('billTradeName').value;
+             const elPv = document.getElementById('pv-billCompany');
+             if(elPv) { elPv.textContent = el.value; if(tradeNameVal && tradeNameVal.trim() !== '') elPv.classList.add('is-sub'); else elPv.classList.remove('is-sub'); }
+        } else if(el.id === 'billTaxId') {
+             const elPv = document.getElementById('pv-billTaxId');
+             if(elPv) elPv.textContent = el.value ? `CIF/VAT: ${el.value}` : '';
+        } else if(el.id === 'invDate') {
+             const val = el.value; if(val) { const [y, m, d] = val.split('-'); document.getElementById('pv-invDate-formatted').textContent = `${d}/${m}/${y}`; }
+        } else if (target) {
+          if (target.dataset.format === 'multiline') target.innerHTML = (el.value || '').replace(/\n/g, '<br>');
+          else target.textContent = el.value;
+        }
+      }
+    });
+
+    const sStart = document.getElementById('sailingStart').value;
+    const sEnd = document.getElementById('sailingEnd').value;
+    const start = parseDateStr(sStart), end = parseDateStr(sEnd);
+    if(start&&end&&!isNaN(start)&&!isNaN(end)) {
+      const days = Math.ceil(Math.abs(end-start)/(1000*60*60*24));
+      document.getElementById('pv-sailing-combined').textContent = `${sStart} ~ ${sEnd} (${days}天 ${days-1}晚)`;
+    } else {
+      document.getElementById('pv-sailing-combined').textContent = [sStart, sEnd].filter(Boolean).join(' ~ ');
+    }
+
+    const tbody = document.getElementById('preview-items-body');
+    tbody.innerHTML = '';
+    let tBase=0, tTax=0, tHSC=0, tComm=0;
+    let totalGrossPrice = 0;
+
+    items.forEach(item => {
+      const qty = Number(item.qty)||0;
+      const grossPrice = Number(item.base)||0; 
+      const tax = Number(item.tax)||0;
+      const hsc = Number(item.hsc)||0;
+      const rate = Number(item.rate)||0;
+      const extra = Number(item.extra)||0; 
+      
+      const commBase = grossPrice - tax - hsc - extra;
+      const comm = (commBase * (rate/100)) + extra;
+      const net = grossPrice - comm; 
+      
+      tBase += commBase; 
+      tTax += tax; 
+      tHSC += hsc; 
+      tComm += comm;
+      totalGrossPrice += grossPrice;
+
+      const cabinDesc = [item.type, item.exp, item.price].filter(Boolean).join(' / ');
+      const fullNameDesc = item.name ? `${item.name} - ${cabinDesc}` : cabinDesc;
+      
+      let addonsRows = '';
+      if(item.addons && item.addons.length > 0) {
+          item.addons.forEach(ad => {
+              const aQty = Number(ad.qty) || 1;
+              const unit = Number(ad.amount)||0;
+              const adGross = aQty * unit; 
+              const r = Number(ad.rate)||0;
+              const adComm = adGross * (r/100);
+              const adNet = adGross - adComm;
+              
+              tBase += adGross; 
+              totalGrossPrice += adGross;
+              tComm += adComm;
+              
+              addonsRows += `
+                <tr class="row-addon">
+                    <td class="addon-desc">
+                      <div>${ad.desc || '附加产品'}</div>
+                    </td>
+                    <td class="num">${aQty}</td>
+                    <td class="num">${formatMoney(adGross)}</td>
+                    <td class="num">-</td>
+                    <td class="num text-red">
+                      <div>- ${formatMoney(adComm)}</div>
+                    </td>
+                    <td class="num">-</td>
+                    <td class="num">-</td>
+                    <td class="num text-bold">${formatMoney(adNet)}</td>
+                </tr>`;
+          });
+      }
+
+      let commHtml = `<div class="text-red">- ${formatMoney(comm)}</div>`;
+      if (rate > 0 || extra > 0) {
+          let detailStr = `(${rate}%`;
+          if(extra > 0) detailStr += ` + ${extra}`;
+          detailStr += `)`;
+          commHtml += `<div class="comm-detail">${detailStr}</div>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><div style="font-weight:600; color:#1f2937">${fullNameDesc || '-'}</div></td>
+        <td class="num">${qty}</td>
+        <td class="num">${formatMoney(grossPrice)}</td>
+        <td class="num">${formatMoney(commBase)}</td>
+        <td class="num">${commHtml}</td>
+        <td class="num">${formatMoney(tax)}</td>
+        <td class="num">${formatMoney(hsc)}</td>
+        <td class="num text-bold">${formatMoney(net)}</td>
+      `;
+      tbody.appendChild(tr);
+      if(addonsRows) tbody.insertAdjacentHTML('beforeend', addonsRows);
+    });
+
+    if(items.length===0) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#ccc;padding:20px;">暂无项目 No Items / 无明细</td></tr>';
+
+    const gross = totalGrossPrice; 
+    const net = gross - tComm; 
+    const curr = "EUR";
+    
+    document.getElementById('display-total-base').textContent = formatMoney(tBase);
+    document.getElementById('display-total-tax-hsc').textContent = formatMoney(tTax + tHSC);
+    
+    document.getElementById('display-gross').textContent = curr + ' ' + formatMoney(gross); 
+    document.getElementById('display-commission').textContent = '- ' + curr + ' ' + formatMoney(tComm);
+    document.getElementById('display-net').textContent = formatMoney(net);
+    
+    saveData();
+  }
+
+  function saveData() {
+    const data = { items, fields: {} };
+    document.querySelectorAll('.pane-form input:not([type=file]), .pane-form textarea').forEach(el => {
+      if(el.id && !el.closest('#items-container') && !el.list && el.id!=='clientSelect') data.fields[el.id] = el.value;
+    });
+    data.fields['ship'] = document.getElementById('ship').value;
+    data.fields['route'] = document.getElementById('route').value;
+    data.fields['sailingStart'] = document.getElementById('sailingStart').value;
+    data.fields['sailingEnd'] = document.getElementById('sailingEnd').value;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadData() {
+    document.getElementById('invDate').valueAsDate = new Date();
+    const json = localStorage.getItem(STORAGE_KEY);
+    if(json) {
+      try {
+        const data = JSON.parse(json);
+        if(data.fields) Object.entries(data.fields).forEach(([k,v]) => { const el=document.getElementById(k); if(el&&!el.readOnly) el.value=v; });
+        items = (data.items || []).map(i => ({ ...defaultItem, ...i, addons: i.addons || [] }));
+        if(items.length === 0) items = [{ ...defaultItem, addons:[] }];
+      } catch(e) { items = [{ ...defaultItem, addons:[] }]; }
+    } else {
+      items = [{ ...defaultItem, addons:[] }];
+      document.getElementById('payment').value = DEFAULT_PAYMENT;
+      document.getElementById('remarks').value = DEFAULT_REMARKS;
+    }
+    renderItemInputs(); updateState();
+    document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(inp => checkClear(inp));
+  }
+  
+  function resetForm() { 
+    if(confirm("是否重置所有数据？ Reset all?")) { 
+        localStorage.removeItem(STORAGE_KEY); 
+        document.getElementById('payment').value = DEFAULT_PAYMENT;
+        document.getElementById('remarks').value = DEFAULT_REMARKS;
+        document.getElementById('invNo').value = "";
+        document.getElementById('clientSelect').value = "";
+        document.getElementById('billTradeName').value = "";
+        document.getElementById('billCompany').value = "";
+        document.getElementById('billTaxId').value = "";
+        document.getElementById('billAddress').value = "";
+        document.getElementById('billDefaultRate').value = 0;
+        document.getElementById('billAddonRate').value = 0;
+        document.getElementById('ship').value = "";
+        document.getElementById('route').value = "";
+        document.getElementById('sailingStart').value = "";
+        document.getElementById('sailingEnd').value = "";
+        document.getElementById('ref').value = "";
+        items = [{ ...defaultItem, addons:[] }];
+        renderItemInputs(); updateState();
+    } 
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadClients(); loadAuxDB(); loadData();
+    document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(el => {
+      if(!el.closest('#items-container') && el.id!=='sailingStart' && el.id!=='sailingEnd') el.addEventListener('input', updateState);
+    });
+  });
+</script>
+</body>
+</html>
