@@ -295,14 +295,14 @@
         <table class="inv-table">
           <thead>
             <tr>
-              <th style="width: 34%">舱房说明 <span class="th-sub">Cabin Description</span></th>
+              <th style="width: 24%">舱房说明 <span class="th-sub">Cabin Description</span></th>
               <th class="num" style="width: 8%">人数/数量 <span class="th-sub">PAX</span></th>
-              <th class="num" style="width: 10%">直客价 <span class="th-sub">Gross Price</span></th>
-              <th class="num" style="width: 9%">净船票 <span class="th-sub">Base Fare</span></th>
-              <th class="num" style="width: 10%">佣金 <span class="th-sub">Commission</span></th>
+              <th class="num" style="width: 13%">直客价 <span class="th-sub">Gross Price</span></th>
+              <th class="num" style="width: 11%">净船票 <span class="th-sub">Base Fare</span></th>
+              <th class="num" style="width: 11%">佣金 <span class="th-sub">Comm</span></th>
               <th class="num" style="width: 9%">税费 <span class="th-sub">Tax</span></th>
               <th class="num" style="width: 9%">服务费 <span class="th-sub">HSC</span></th>
-              <th class="num" style="width: 11%">结算价 <span class="th-sub">Net Payable</span></th>
+              <th class="num" style="width: 15%">结算价 <span class="th-sub">Net Payable</span></th>
             </tr>
           </thead>
           <tbody id="preview-items-body"></tbody>
@@ -598,9 +598,9 @@
       const invNo = document.getElementById('invNo').value.trim();
       const oldTitle = document.title;
       if (invNo) {
-          document.title = `【分销账单 ${invNo}】`;
+          document.title = `邮轮账单 ${invNo}`;
       } else {
-          document.title = `【分销账单】`;
+          document.title = `邮轮账单`;
       }
       window.print();
       setTimeout(() => { document.title = oldTitle; }, 500);
@@ -947,4 +947,3 @@
 </script>
 </body>
 </html>
-
