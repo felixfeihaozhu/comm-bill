@@ -305,7 +305,7 @@
               <th class="num" style="width: 8%">人数/数量 <span class="th-sub">PAX</span></th>
               <th class="num" style="width: 10%">直客价 <span class="th-sub">Gross Price</span></th>
               <th class="num" style="width: 9%">净船票 <span class="th-sub">Base Fare</span></th>
-              <th class="num" style="width: 10%">佣金 <span class="th-sub">Commission</span></th>
+              <th class="num" style="width: 10%">佣金 <span class="th-sub">Comm</span></th>
               <th class="num" style="width: 9%">税费 <span class="th-sub">Tax</span></th>
               <th class="num" style="width: 9%">服务费 <span class="th-sub">HSC</span></th>
               <th class="num" style="width: 11%">结算价 <span class="th-sub">Net Payable</span></th>
@@ -346,7 +346,7 @@
     <div class="form-scroll-area">
       <div class="form-group">
         <div class="form-title">基础信息 Basic Info</div>
-        <div class="row"><div class="col"><label>编号 Exp No.</label><div class="input-box"><input type="text" id="invNo" placeholder="EXP-2024-001" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div><div class="col"><label>日期 Date</label><div class="input-box"><input type="date" id="invDate" oninput="checkClear(this)"></div></div></div>
+        <div class="row"><div class="col"><label>编号 Exp No.</label><div class="input-box"><input type="text" id="invNo" placeholder="25 0001" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div><div class="col"><label>日期 Date</label><div class="input-box"><input type="date" id="invDate" oninput="checkClear(this)"></div></div></div>
       </div>
       <div style="display:none">
         <input type="text" id="agencyName" value="符号旅游 FH GLOBAL, S.L."><textarea id="agencyAddress">PASEO QUINCE DE MAYO 3, 28019 MADRID</textarea><textarea id="agencyContact">Tel: +34 919471812 | fhglobal@fhglobal.es</textarea><input type="text" id="currency" value="EUR">
@@ -363,7 +363,7 @@
           <div class="row">
             <div class="col"><label>商用名称 Trade Name</label><div class="input-box"><input type="text" id="billTradeName" placeholder="Ctrip / 携程" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
             <div class="col-sm"><label>佣金% Comm</label><div class="input-box"><input type="number" id="billDefaultRate" value="0"></div></div>
-            <div class="col-sm"><label>附加佣金% Addon</label><div class="input-box"><input type="number" id="billAddonRate" value="0"></div></div>
+            <div class="col-sm"><label>附加佣金%</label><div class="input-box"><input type="number" id="billAddonRate" value="0"></div></div>
           </div>
           <div class="row"><div class="col"><label>公司注册名称 Legal Name</label><div class="input-box"><input type="text" id="billCompany" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
           <div class="row"><div class="col"><label>税号 CIF / VAT No.</label><div class="input-box"><input type="text" id="billTaxId" placeholder="e.g. ES12345678" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
@@ -737,7 +737,7 @@
              <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
            </div>
            <div class="input-box" style="flex:1">
-             <input type="text" placeholder="预订号 Ref No." value="${item.ref||''}" oninput="updateItem(${index}, 'ref', this.value);checkClear(this)">
+             <input type="text" placeholder="预订号 Loc." value="${item.ref||''}" oninput="updateItem(${index}, 'ref', this.value);checkClear(this)">
              <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
            </div>
         </div>
@@ -1041,3 +1041,4 @@
 </script>
 </body>
 </html>
+
