@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>分销账单 7.3.2 - 符号旅游</title>
+  <title>分销账单 V7.3 (日期修正版) - 符号旅游</title>
+  
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
   <style>
     :root {
       /* 核心配色 */
@@ -21,7 +24,8 @@
       --font-stack: "Inter", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
       --shadow-paper: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
-
+    /* ... (后面的 CSS 样式保持不变，不需要修改) ... */
+    
     * { box-sizing: border-box; }
 
     body {
@@ -250,7 +254,7 @@
 <div class="app-container">
   <div class="pane-preview">
     <div class="toolbar">
-      <h1>分销账单 V7.3.2 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
+      <h1>分销账单 V7.3.3 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
       <div>
         <button class="btn btn-backup" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 备份数据 Backup</button>
         <button class="btn btn-restore" onclick="document.getElementById('importFile').click()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 恢复数据 Restore</button>
@@ -1041,5 +1045,6 @@
 </script>
 </body>
 </html>
+
 
 
