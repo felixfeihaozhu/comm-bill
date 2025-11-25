@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>分销账单 7.3 - 符号旅游</title>
+  <title>分销账单 7.3.2 - 符号旅游</title>
   <style>
     :root {
       /* 核心配色 */
@@ -250,7 +250,7 @@
 <div class="app-container">
   <div class="pane-preview">
     <div class="toolbar">
-      <h1>分销账单 V7.3 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
+      <h1>分销账单 V7.3.2 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
       <div>
         <button class="btn btn-backup" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 备份数据 Backup</button>
         <button class="btn btn-restore" onclick="document.getElementById('importFile').click()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 恢复数据 Restore</button>
@@ -910,12 +910,12 @@
   let saveTimeout;
   function saveDraftDebounced() {
       if(!auth.currentUser) return;
-      setStatus('connecting', 'Saving...');
+      setStatus('connecting', '保存中...');
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(() => {
           const draftData = { items: window.items, fields: getFieldsData(), _updated: Date.now() };
           set(ref(db, 'draft'), draftData).then(() => {
-              setStatus('connected', 'Synced');
+              setStatus('connected', '已同步/更新');
           }).catch(err => {
               setStatus('offline', 'Error');
           });
@@ -979,7 +979,7 @@
                  window.renderItemInputs();
               }
               window.updateState();
-              setStatus('connected', 'Synced');
+              setStatus('connected', '已同步/更新');
           } else {
               // --- New Draft: Auto-fill Date to Today ---
               document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
@@ -1019,7 +1019,7 @@
 
   onAuthStateChanged(auth, (user) => {
       if (user) {
-          setStatus('connected', 'Online');
+          setStatus('connected', '已连接');
           initializeDatabase(); 
           initListeners();
           
@@ -1029,16 +1029,17 @@
             }
           });
       } else {
-          setStatus('offline', 'Offline');
+          setStatus('offline', '未连接');
       }
   });
 
   signInAnonymously(auth).catch((error) => {
       console.error(error);
-      setStatus('offline', 'Auth Failed');
+      setStatus('offline', '验证失败');
   });
 
 </script>
 </body>
 </html>
+
 
