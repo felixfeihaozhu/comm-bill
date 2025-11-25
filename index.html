@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>分销账单 V7.3 (日期修正版) - 符号旅游</title>
+  <title>分销账单 - 符号旅游</title>
   
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
@@ -24,7 +24,6 @@
       --font-stack: "Inter", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
       --shadow-paper: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
-    /* ... (后面的 CSS 样式保持不变，不需要修改) ... */
     
     * { box-sizing: border-box; }
 
@@ -254,7 +253,7 @@
 <div class="app-container">
   <div class="pane-preview">
     <div class="toolbar">
-      <h1>分销账单 V7.3.3 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
+      <h1>分销账单 7.3.6 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
       <div>
         <button class="btn btn-backup" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 备份数据 Backup</button>
         <button class="btn btn-restore" onclick="document.getElementById('importFile').click()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 恢复数据 Restore</button>
@@ -802,7 +801,6 @@
       }
     });
 
-    // --- Updated Duration Calculation Logic ---
     const sStart = document.getElementById('sailingStart').value;
     const sEnd = document.getElementById('sailingEnd').value;
     const start = window.parseDateStr(sStart), end = window.parseDateStr(sEnd);
@@ -928,7 +926,6 @@
 
   // --- Database Initialization & Sync ---
   function initializeDatabase() {
-      // Check if Settings exist, if not, upload BACKUP_DATA (Auto-Seed)
       get(ref(db, 'settings')).then((snapshot) => {
           if (!snapshot.exists()) {
              console.log("Empty DB detected. Uploading Backup Data...");
@@ -967,16 +964,43 @@
 
       onValue(ref(db, 'draft'), (snapshot) => {
           const data = snapshot.val();
-          if(data) {
-              if(data.fields) {
-                  Object.entries(data.fields).forEach(([k,v]) => { 
-                      const el=document.getElementById(k); 
-                      if(el && document.activeElement !== el) { 
-                          el.value=v; 
-                          window.checkClear(el);
-                      }
-                  });
-              }
+          
+          // 1. PREPARE DEFAULTS
+          const defaults = {
+              payment: DEFAULT_PAYMENT,
+              remarks: DEFAULT_REMARKS,
+              invDate: new Date().toISOString().split('T')[0]
+          };
+
+          if (data) {
+              // 2. MERGE FIELDS WITH DEFAULTS (Force default if empty)
+              const remoteFields = data.fields || {};
+              
+              // Apply Date
+              const dateEl = document.getElementById('invDate');
+              dateEl.value = (remoteFields.invDate && remoteFields.invDate.trim()) ? remoteFields.invDate : defaults.invDate;
+              window.checkClear(dateEl);
+
+              // Apply Payment
+              const payEl = document.getElementById('payment');
+              payEl.value = (remoteFields.payment && remoteFields.payment.trim()) ? remoteFields.payment : defaults.payment;
+              window.checkClear(payEl);
+
+              // Apply Remarks
+              const remEl = document.getElementById('remarks');
+              remEl.value = (remoteFields.remarks && remoteFields.remarks.trim()) ? remoteFields.remarks : defaults.remarks;
+              window.checkClear(remEl);
+
+              // Apply other fields
+              Object.entries(remoteFields).forEach(([k, v]) => {
+                  if (['invDate', 'payment', 'remarks'].includes(k)) return; // Handled above
+                  const el = document.getElementById(k);
+                  if (el && document.activeElement !== el) {
+                      el.value = v;
+                      window.checkClear(el);
+                  }
+              });
+
               if(JSON.stringify(window.items) !== JSON.stringify(data.items || [])) {
                  window.items = (data.items || []).map(i => ({ ...defaultItem, ...i, addons: i.addons || [] }));
                  if(window.items.length === 0) window.items = [{ ...defaultItem, addons:[] }];
@@ -985,10 +1009,10 @@
               window.updateState();
               setStatus('connected', '已同步/更新');
           } else {
-              // --- New Draft: Auto-fill Date to Today ---
-              document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
-              document.getElementById('payment').value = DEFAULT_PAYMENT;
-              document.getElementById('remarks').value = DEFAULT_REMARKS;
+              // Fresh start logic
+              document.getElementById('invDate').value = defaults.invDate;
+              document.getElementById('payment').value = defaults.payment;
+              document.getElementById('remarks').value = defaults.remarks;
               window.items = [{ ...defaultItem, addons:[] }];
               window.renderItemInputs();
               window.updateState();
@@ -1045,6 +1069,3 @@
 </script>
 </body>
 </html>
-
-
-
