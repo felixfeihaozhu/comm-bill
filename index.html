@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分销账单 - 符号旅游</title>
+  
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-container">
+  <div class="pane-preview">
+    <div class="toolbar">
+      <h1>分销账单 7.3.6 <div id="sync-status" class="sync-indicator"><span class="dot connecting"></span> <span id="sync-text">Connecting...</span></div></h1>
+      <div>
+        <button class="btn btn-backup" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 备份数据 Backup</button>
+        <button class="btn btn-restore" onclick="document.getElementById('importFile').click()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 恢复数据 Restore</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(this)" accept=".json">
+        <span style="border-left:1px solid #d1d5db; margin:0 8px; height:16px; display:inline-block; vertical-align:middle;"></span>
+        <button class="btn btn-outline" onclick="resetForm()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> 重置 Reset</button>
+        <button class="btn btn-primary" onclick="printBill()"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> 打印 / PDF Print</button>
+      </div>
+    </div>
+    <div class="preview-scroll-area">
+      <div class="paper" id="invoice-paper">
+        <div class="inv-header">
+          <div style="flex:1">
+            <div class="inv-logo-text"><span data-bind="agencyName">符号旅游 FH GLOBAL, S.L.</span></div>
+            <div class="inv-addr" data-bind="agencyAddress" data-format="multiline"></div>
+            <div class="inv-addr" data-bind="agencyContact" data-format="multiline"></div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-title">账单 BILL</div>
+            <div class="inv-subtitle"> </div>
+            <div class="meta-horizontal">
+              <div class="meta-group"><div class="meta-label">编号 Exp #</div><div class="meta-val" data-bind="invNo"></div></div>
+              <div class="meta-group"><div class="meta-label">日期 Date</div><div class="meta-val" id="pv-invDate-formatted"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box-container">
+          <div class="inv-box left">
+            <div class="box-label">客户信息 <span class="en-sub">Bill To</span></div>
+            <div class="box-content">
+              <div class="trade-name" data-bind="billTradeName"></div>
+              <div id="pv-billCompany" class="legal-name"></div>
+              <div id="pv-billTaxId" class="tax-id-line"></div>
+              <div style="margin-top:4px; white-space: pre-wrap;" data-bind="billAddress" data-format="multiline"></div>
+            </div>
+          </div>
+          <div class="inv-box right">
+            <div class="box-label">航次信息 <span class="en-sub">Cruise Details</span></div>
+            <div class="box-content">
+              <div style="margin-bottom:4px"><span class="label-main">船名</span><span class="label-sub">SHIP</span><strong data-bind="ship"></strong></div>
+              <div style="margin-bottom:4px"><span class="label-main">航线</span><span class="label-sub">ROUTE</span><span data-bind="route"></span></div>
+              <div style="margin-bottom:4px"><span class="label-main">航期</span><span class="label-sub">SAILING</span><span id="pv-sailing-combined"></span></div>
+              </div>
+          </div>
+        </div>
+
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th style="width: 34%">舱房说明 <span class="th-sub">Cabin Description</span></th>
+              <th class="num" style="width: 8%">人数/数量 <span class="th-sub">PAX</span></th>
+              <th class="num" style="width: 10%">直客价 <span class="th-sub">Gross Price</span></th>
+              <th class="num" style="width: 9%">净船票 <span class="th-sub">Base Fare</span></th>
+              <th class="num" style="width: 10%">佣金 <span class="th-sub">Comm</span></th>
+              <th class="num" style="width: 9%">税费 <span class="th-sub">Tax</span></th>
+              <th class="num" style="width: 9%">服务费 <span class="th-sub">HSC</span></th>
+              <th class="num" style="width: 11%">结算价 <span class="th-sub">Net Payable</span></th>
+            </tr>
+          </thead>
+          <tbody id="preview-items-body"></tbody>
+        </table>
+
+        <div class="inv-footer">
+          <div class="footer-left">
+            <div class="info-block" style="border-left-color: var(--primary);">
+              <div class="info-title">支付方式 <span class="en-sub">Payment Details</span></div>
+              <div class="info-text" data-bind="payment" data-format="multiline"></div>
+            </div>
+            <div class="info-block" style="border-left-color: var(--accent);">
+              <div class="info-title">备注条款 <span class="en-sub">Remarks</span></div>
+              <div class="info-text" data-bind="remarks" data-format="multiline"></div>
+            </div>
+          </div>
+          <div class="footer-right">
+            <div class="total-row"><div class="total-label">直客总价<span class="en">Total Gross Price</span></div><div id="display-gross">0.00</div></div>
+            <div class="total-row"><div class="total-label">税费服务费总额<span class="en">Total Taxes & HSC</span></div><div id="display-total-tax-hsc">0.00</div></div>
+            <div class="total-row"><div class="total-label">净船票总价<span class="en">Total Base Fare</span></div><div id="display-total-base">0.00</div></div>
+            <div class="total-row comm"><div class="total-label">减: 佣金<span class="en">Less Commission</span></div><div id="display-commission">- 0.00</div></div>
+            <div class="net-box"><div class="net-title">实付结算价 <span class="en">Net Payable (EUR)</span></div><div class="net-val" id="display-net">0.00</div></div>
+          </div>
+        </div>
+        
+        <div style="margin-top:auto; padding-top:20px; border-top:1px solid #eee; text-align:center; font-size:10px; color:#9ca3af;">
+          FH GLOBAL S.L. with NIF: B72398340. Paseo Quince De Mayo 3, 28019 Madrid.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane-form">
+    <div class="form-header"><h2>账单录入 Edit Bill</h2></div>
+    <div class="form-scroll-area">
+      <div class="form-group">
+        <div class="form-title">基础信息 Basic Info</div>
+        <div class="row"><div class="col"><label>编号 Exp No.</label><div class="input-box"><input type="text" id="invNo" placeholder="25 0001" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div><div class="col"><label>日期 Date</label><div class="input-box"><input type="date" id="invDate" oninput="checkClear(this)"></div></div></div>
+      </div>
+      <div style="display:none">
+        <input type="text" id="agencyName" value="符号旅游 FH GLOBAL, S.L."><textarea id="agencyAddress">PASEO QUINCE DE MAYO 3, 28019 MADRID</textarea><textarea id="agencyContact">Tel: +34 919471812 | fhglobal@fhglobal.es</textarea><input type="text" id="currency" value="EUR">
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">客户信息 Client Info</div>
+        <div class="input-group" style="margin-bottom: 10px;">
+           <select id="clientSelect" onchange="selectClient()"><option value="">-- 选择常用客户 Select Client --</option></select>
+           <div class="group-btn" onclick="toggleClientDetails()" title="编辑/新增"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+        </div>
+        
+        <div id="client-details-wrapper">
+          <div class="row">
+            <div class="col"><label>商用名称 Trade Name</label><div class="input-box"><input type="text" id="billTradeName" placeholder="Ctrip / 携程" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
+            <div class="col-sm"><label>佣金% Comm</label><div class="input-box"><input type="number" id="billDefaultRate" value="0"></div></div>
+            <div class="col-sm"><label>附加佣金%</label><div class="input-box"><input type="number" id="billAddonRate" value="0"></div></div>
+          </div>
+          <div class="row"><div class="col"><label>公司注册名称 Legal Name</label><div class="input-box"><input type="text" id="billCompany" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>税号 CIF / VAT No.</label><div class="input-box"><input type="text" id="billTaxId" placeholder="e.g. ES12345678" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>地址 Address</label><div class="input-box"><textarea id="billAddress" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div style="text-align:right; margin-top:10px;">
+             <button class="btn btn-sm btn-outline" onclick="toggleClientDetails()">收起 Hide</button>
+             <button class="btn btn-sm btn-save" onclick="saveClient()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> 保存 Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">航次信息 Cruise Info</div>
+        <div class="row">
+            <div class="col"><label>船名 Ship</label><div class="merged-group"><div class="input-box"><input type="text" id="ship" list="shipList" placeholder="" onblur="autoSaveShip(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editShip()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="shipList"></datalist></div><span id="msg-ship" class="status-msg"></span></div>
+            <div class="col"><label>航线 Route</label><div class="merged-group"><div class="input-box"><input type="text" id="route" list="routeList" placeholder="" onblur="autoSaveRoute(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editRoute()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="routeList"></datalist></div><span id="msg-route" class="status-msg"></span></div>
+        </div>
+        <div class="row">
+            <div class="col"><label>出发 Start</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingStart" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerStart')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerStart" class="hidden-date-overlay" onchange="pickDate(this, 'sailingStart')"></div></div></div>
+            <div class="col"><label>结束 End</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingEnd" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerEnd')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerEnd" class="hidden-date-overlay" onchange="pickDate(this, 'sailingEnd')"></div></div></div>
+            </div>
+      </div>
+
+      <div class="form-group" style="border-color:#fca5a5; background:#fff1f2;">
+        <div class="form-title" style="color:#b91c1c;"><span>费用明细 Items</span><div><button class="btn btn-primary btn-sm" onclick="addItem()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 添加舱房 Add Cabin</button></div></div>
+        <datalist id="dl-types"></datalist><datalist id="dl-exps"></datalist><datalist id="dl-prices"></datalist><datalist id="dl-addons"></datalist>
+        <div id="items-container"></div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-title">
+          <span>支付与备注 Payment & Notes</span>
+          <button class="btn btn-sm btn-toggle" onclick="togglePayment()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 查看/编辑 Show/Edit</button>
+        </div>
+        <div id="payment-wrapper">
+          <div class="row"><div class="col"><label>支付信息 Payment</label><div class="input-box"><textarea id="payment" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+          <div class="row"><div class="col"><label>备注 Remarks</label><div class="input-box"><textarea id="remarks" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      <div style="height:30px"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
