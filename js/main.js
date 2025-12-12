@@ -1,5 +1,5 @@
 import { db, auth, ref, set, onValue, get, onAuthStateChanged } from "./core/firebase-config.js";
-import { t, setLanguage, getCurrentLanguage } from "./core/i18n.js";
+import { t, setLanguage, getCurrentLanguage } from "./core/i18n.js?v=2";
 
 // --- 1. 加载配置数据 ---
 let CONFIG_DATA = null;
@@ -315,30 +315,65 @@ function updateUILanguage() {
     }
     
     // 报价模式：如果预定条件是默认值，则自动切换语言
-    const termsEl = document.getElementById('termsConditions');
-    if (termsEl && currentMode === 'quote') {
-        const currentValue = termsEl.value.trim();
-        const allDefaults = getAllDefaultTerms();
-        // 检查当前值是否是任一语言的默认值
-        if (allDefaults.some(d => d.trim() === currentValue)) {
-            termsEl.value = getDefaultTermsConditions(currentLang);
-            const termsBox = termsEl.closest('.input-box');
-            if (termsBox) termsBox.classList.add('has-val');
+    try {
+        const termsEl = document.getElementById('termsConditions');
+        if (termsEl && currentMode === 'quote') {
+            const currentValue = termsEl.value.trim();
+            const allDefaults = getAllDefaultTerms();
+            // 检查当前值是否是任一语言的默认值
+            if (allDefaults.some(d => d.trim() === currentValue)) {
+                termsEl.value = getDefaultTermsConditions(currentLang);
+                const termsBox = termsEl.closest('.input-box');
+                if (termsBox) termsBox.classList.add('has-val');
+            }
         }
+    } catch (e) {
+        console.warn('⚠️ 语言切换时更新预定条件失败:', e);
     }
     
     // 报价模式：如果取消政策是默认值，则自动切换语言
-    const cancelEl = document.getElementById('cancellationPolicy');
-    if (cancelEl && currentMode === 'quote') {
-        const currentValue = cancelEl.value.trim();
-        const allDefaults = getAllDefaultCancellationPolicies();
-        // 检查当前值是否是任一语言的默认值
-        if (allDefaults.some(d => d.trim() === currentValue)) {
-            cancelEl.value = getDefaultCancellationPolicy(currentLang);
-            const cancelBox = cancelEl.closest('.input-box');
-            if (cancelBox) cancelBox.classList.add('has-val');
+    try {
+        const cancelEl = document.getElementById('cancellationPolicy');
+        if (cancelEl && currentMode === 'quote') {
+            const currentValue = cancelEl.value.trim();
+            const allDefaults = getAllDefaultCancellationPolicies();
+            // 检查当前值是否是任一语言的默认值
+            if (allDefaults.some(d => d.trim() === currentValue)) {
+                cancelEl.value = getDefaultCancellationPolicy(currentLang);
+                const cancelBox = cancelEl.closest('.input-box');
+                if (cancelBox) cancelBox.classList.add('has-val');
+            }
         }
+    } catch (e) {
+        console.warn('⚠️ 语言切换时更新取消政策失败:', e);
     }
+    
+    // 报价模式：如果价格包含是默认值，则自动切换语言
+    try {
+        const priceIncludesEl = document.getElementById('priceIncludes');
+        if (priceIncludesEl && currentMode === 'quote') {
+            const currentValue = priceIncludesEl.value.trim();
+            const allDefaults = getAllDefaultPriceIncludes();
+            // 检查当前值是否是任一语言的默认值
+            if (allDefaults.some(d => d.trim() === currentValue)) {
+                priceIncludesEl.value = getDefaultPriceIncludes(currentLang);
+                const priceIncludesBox = priceIncludesEl.closest('.input-box');
+                if (priceIncludesBox) priceIncludesBox.classList.add('has-val');
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ 语言切换时更新价格包含失败:', e);
+    }
+    
+    // 更新语言按钮的激活状态
+    document.querySelectorAll('.btn-lang').forEach(btn => {
+        const btnLang = btn.getAttribute('onclick')?.match(/switchLanguage\('(\w+)'\)/)?.[1];
+        if (btnLang === currentLang) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
 }
 
 // --- Data Variables ---
@@ -366,6 +401,47 @@ const DEFAULT_CANCELLATION = {
     zh: "所有取消和修改均需支付手续费，且必须针对同一舱房的所有乘客一并办理。特价票和/或临期票不可取消或更改。取消条件和适用比例取决于出发前的天数，具体请咨询代理或邮轮公司官网。更换乘客或日期仅可在允许的期限内进行，需支付相应费用，且须经邮轮公司确认。如遇不可抗力或外部原因，相关申请将按邮轮公司政策处理。",
     es: "Todas las cancelaciones y modificaciones conllevan costes de gestión y deben ser tramitadas para todos los pasajeros de la misma cabina. Las tarifas especiales y/o de última hora no permiten cancelación ni cambios. Las condiciones y porcentajes aplicables a las cancelaciones dependen de los días previos a la salida; consulte los detalles en la agencia o en la web de la naviera. Los cambios de pasajero o de fecha solo pueden realizarse dentro de los plazos permitidos y con las tarifas correspondientes, siempre sujetos a confirmación por parte de la naviera. En situaciones de fuerza mayor o causas externas, las solicitudes se gestionarán conforme a la política de la compañía.",
     en: "All cancellations and modifications incur processing fees and must be processed for all passengers in the same cabin. Special and/or last-minute fares do not allow cancellation or changes. The conditions and percentages applicable to cancellations depend on the days before departure; please consult the agency or the cruise line's website for details. Passenger or date changes can only be made within the permitted deadlines and with the corresponding fees, always subject to confirmation by the cruise line. In situations of force majeure or external causes, requests will be handled according to the company's policy."
+};
+
+// 默认其他付款方式（多语言版本）
+const DEFAULT_OTHER_PAYMENT = {
+    zh: `• BBVA 银行转账
+• Revolut 转账
+• 在线支付链接
+• Scalapay 分期付款`,
+    es: `• Transferencia BBVA
+• Transferencia Revolut
+• Enlace de pago en línea
+• Scalapay pago a plazos`,
+    en: `• BBVA bank transfer
+• Revolut transfer
+• Online payment link
+• Scalapay installment payment`
+};
+
+// 默认价格包含（多语言版本）
+const DEFAULT_PRICE_INCLUDES = {
+    zh: `• 整个航程2人舱房住宿
+• 全餐（自助餐和主餐厅）
+• 船上娱乐节目及公共设施使用（泳池、运动区、活动和表演）
+• 港口税费
+• 强制服务费（小费）
+
+航程中无其他强制消费。`,
+    es: `• Alojamiento para 2 personas durante todo el crucero.
+• Pensión completa (buffet y restaurante principal).
+• Programa de entretenimiento a bordo y uso de las instalaciones comunes (piscinas, áreas deportivas, actividades y espectáculos).
+• Tasas portuarias.
+• Cuota de servicio obligatoria (propinas).
+
+No existen gastos obligatorios adicionales durante el crucero.`,
+    en: `• Accommodation for 2 persons throughout the cruise.
+• Full board (buffet and main restaurant).
+• Onboard entertainment program and use of common facilities (pools, sports areas, activities and shows).
+• Port taxes.
+• Mandatory service charge (tips).
+
+No additional mandatory expenses during the cruise.`
 };
 
 function getDefaultTermsConditions(lang) {
@@ -444,6 +520,92 @@ function getAllDefaultCancellationPolicies() {
     return allPolicies;
 }
 
+// 获取当前语言的默认价格包含
+function getDefaultPriceIncludes(lang) {
+    const currentLang = lang || getCurrentLanguage();
+    const configPriceIncludes = CONFIG_DATA?.defaults?.priceIncludes;
+    
+    // 优先使用 Firebase 配置中的值
+    if (configPriceIncludes) {
+        // 如果是对象格式（多语言），取对应语言
+        if (typeof configPriceIncludes === 'object' && configPriceIncludes[currentLang]) {
+            return configPriceIncludes[currentLang];
+        }
+        // 如果是字符串格式（旧格式），直接返回
+        if (typeof configPriceIncludes === 'string') {
+            return configPriceIncludes;
+        }
+    }
+    // 使用本地默认值
+    return DEFAULT_PRICE_INCLUDES[currentLang] || DEFAULT_PRICE_INCLUDES.es;
+}
+
+// 获取当前语言的默认其他付款方式
+function getDefaultOtherPayment(lang) {
+    const currentLang = lang || getCurrentLanguage();
+    const configOtherPayment = CONFIG_DATA?.defaults?.otherPayment;
+    
+    // 优先使用 Firebase 配置中的值
+    if (configOtherPayment) {
+        if (typeof configOtherPayment === 'object' && configOtherPayment[currentLang]) {
+            return configOtherPayment[currentLang];
+        }
+        if (typeof configOtherPayment === 'string') {
+            return configOtherPayment;
+        }
+    }
+    // 使用本地默认值
+    return DEFAULT_OTHER_PAYMENT[currentLang] || DEFAULT_OTHER_PAYMENT.es;
+}
+
+// 获取所有语言的默认其他付款方式（用于检测是否为默认值）
+function getAllDefaultOtherPayment() {
+    const configOtherPayment = CONFIG_DATA?.defaults?.otherPayment;
+    const allPayments = [];
+    
+    // 添加本地默认值
+    Object.values(DEFAULT_OTHER_PAYMENT).forEach(p => allPayments.push(p));
+    
+    // 添加 Firebase 配置中的值
+    if (configOtherPayment) {
+        if (typeof configOtherPayment === 'object') {
+            Object.values(configOtherPayment).forEach(p => allPayments.push(p));
+        } else if (typeof configOtherPayment === 'string') {
+            allPayments.push(configOtherPayment);
+        }
+    }
+    
+    return allPayments;
+}
+
+// 获取所有语言的默认价格包含（用于检测是否为默认值）
+function getAllDefaultPriceIncludes() {
+    const configPriceIncludes = CONFIG_DATA?.defaults?.priceIncludes;
+    const allIncludes = [];
+    
+    // 添加本地默认值
+    Object.values(DEFAULT_PRICE_INCLUDES).forEach(p => allIncludes.push(p));
+    
+    // 添加旧版本默认值（带标题的版本，用于兼容已存储的数据）
+    const oldDefaults = {
+        zh: `✅ 价格包含：\n${DEFAULT_PRICE_INCLUDES.zh}`,
+        es: `✅ El precio incluye:\n${DEFAULT_PRICE_INCLUDES.es}`,
+        en: `✅ Price includes:\n${DEFAULT_PRICE_INCLUDES.en}`
+    };
+    Object.values(oldDefaults).forEach(p => allIncludes.push(p));
+    
+    // 添加 Firebase 配置中的值
+    if (configPriceIncludes) {
+        if (typeof configPriceIncludes === 'object') {
+            Object.values(configPriceIncludes).forEach(p => allIncludes.push(p));
+        } else if (typeof configPriceIncludes === 'string') {
+            allIncludes.push(configPriceIncludes);
+        }
+    }
+    
+    return allIncludes;
+}
+
 function getAdminPassword() {
     return CONFIG_DATA?.defaults?.adminPassword || "fh2025";
 }
@@ -509,6 +671,24 @@ window.toggleTerms = function() {
 window.toggleCancellation = function() {
   const wrapper = document.getElementById('cancellation-wrapper');
   wrapper.style.display = (wrapper.style.display === 'none' || wrapper.style.display === '') ? 'block' : 'none';
+}
+
+window.togglePriceIncludes = function() {
+  const wrapper = document.getElementById('price-includes-wrapper');
+  wrapper.style.display = (wrapper.style.display === 'none' || wrapper.style.display === '') ? 'block' : 'none';
+}
+
+window.toggleQuoteTotals = function() {
+  const checkbox = document.getElementById('showQuoteTotals');
+  const tableFooter = document.getElementById('quote-table-footer');
+  if (tableFooter) {
+    if (checkbox && checkbox.checked) {
+      tableFooter.classList.remove('hidden');
+    } else {
+      tableFooter.classList.add('hidden');
+    }
+  }
+  window.updateState();
 }
 
 window.toggleRemarks = function() {
@@ -1196,6 +1376,62 @@ function updateStateInternal() {
         paper.classList.remove('has-descuento');
       }
     }
+    
+    // 报价模式：价格包含区域显示/隐藏（根据内容）
+    const priceIncludesRight = document.getElementById('quote-price-includes-right');
+    const priceIncludesInput = document.getElementById('priceIncludes');
+    if (priceIncludesRight && priceIncludesInput) {
+      const hasContent = priceIncludesInput.value && priceIncludesInput.value.trim() !== '';
+      priceIncludesRight.style.display = hasContent ? 'flex' : 'none';
+    }
+    
+    // 报价模式：更新其他付款方式（自动显示当前语言的默认值）
+    if (currentMode === 'quote') {
+      const otherPaymentDisplay = document.getElementById('display-other-payment');
+      if (otherPaymentDisplay) {
+        const otherPaymentContent = getDefaultOtherPayment();
+        otherPaymentDisplay.innerHTML = otherPaymentContent.replace(/\n/g, '<br>');
+      }
+    }
+    
+    // 报价模式：更新表格底部汇总行（所有列）
+    const totalPax = window.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    
+    // 更新各列汇总
+    const displayTotalPax = document.getElementById('display-quote-total-pax');
+    if (displayTotalPax) displayTotalPax.textContent = totalPax;
+    
+    const displayTotalPvp = document.getElementById('display-quote-total-pvp');
+    if (displayTotalPvp) displayTotalPvp.textContent = window.formatMoney(totalGrossPrice);
+    
+    const displayTotalBase = document.getElementById('display-quote-total-base');
+    if (displayTotalBase) displayTotalBase.textContent = window.formatMoney(tBase);
+    
+    const displayTotalTasa = document.getElementById('display-quote-total-tasa');
+    if (displayTotalTasa) displayTotalTasa.textContent = window.formatMoney(tTax);
+    
+    const displayTotalHsc = document.getElementById('display-quote-total-hsc');
+    if (displayTotalHsc) displayTotalHsc.textContent = window.formatMoney(tHSC);
+    
+    const displayFooterDescuento = document.getElementById('display-quote-footer-descuento');
+    if (displayFooterDescuento) {
+      displayFooterDescuento.textContent = tDescuento > 0 ? '- ' + window.formatMoney(tDescuento) : '';
+    }
+    
+    const displayFooterTotal = document.getElementById('display-quote-footer-total');
+    const quoteNetTotal = totalGrossPrice - tDescuento;
+    if (displayFooterTotal) displayFooterTotal.textContent = window.formatMoney(quoteNetTotal);
+    
+    // 应用开关状态
+    const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
+    const tableFooter = document.getElementById('quote-table-footer');
+    if (tableFooter && showQuoteTotalsEl) {
+      if (showQuoteTotalsEl.checked) {
+        tableFooter.classList.remove('hidden');
+      } else {
+        tableFooter.classList.add('hidden');
+      }
+    }
   }
 
   if(window.items.length===0) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#ccc;padding:20px;">${t('noItems')}</td></tr>`;
@@ -1223,31 +1459,6 @@ function updateStateInternal() {
   
   // 报价模式总价（折扣后最终价格）
   const quoteNet = gross - tDescuento;
-  document.getElementById('display-quote-total').textContent = window.formatMoney(quoteNet);
-  
-  // 报价模式：显示 Total Base
-  const displayQuoteBase = document.getElementById('display-quote-base');
-  if (displayQuoteBase) {
-    displayQuoteBase.textContent = window.formatMoney(tBase);
-  }
-  
-  // 报价模式：显示 Tasa + HSC
-  const displayQuoteTaxHsc = document.getElementById('display-quote-taxhsc');
-  if (displayQuoteTaxHsc) {
-    displayQuoteTaxHsc.textContent = window.formatMoney(tTax + tHSC);
-  }
-  
-  // 报价模式：显示小计（每行subtotal的总和）
-  const displayQuoteSubtotal = document.getElementById('display-quote-subtotal');
-  if (displayQuoteSubtotal) {
-    displayQuoteSubtotal.textContent = window.formatMoney(tSubtotal);
-  }
-  
-  // 报价模式：显示折扣总额
-  const displayQuoteDescuento = document.getElementById('display-quote-descuento');
-  if (displayQuoteDescuento) {
-    displayQuoteDescuento.textContent = tDescuento > 0 ? '- ' + window.formatMoney(tDescuento) : '0.00';
-  }
   
   // 票据模式总价（支付金额和待支付金额）
   const paidAmount = 0; // 可在未来从输入框获取
@@ -1268,13 +1479,20 @@ function updateComparePreview() {
 
 function getFieldsData() {
   const data = {};
-  document.querySelectorAll('.pane-form input:not([type=file]), .pane-form textarea').forEach(el => {
+  document.querySelectorAll('.pane-form input:not([type=file]):not([type=checkbox]), .pane-form textarea').forEach(el => {
     if(el.id && !el.closest('#items-container') && !el.list && el.id!=='clientSelect') data[el.id] = el.value;
   });
   data['ship'] = document.getElementById('ship').value;
   data['route'] = document.getElementById('route').value;
   data['sailingStart'] = document.getElementById('sailingStart').value;
   data['sailingEnd'] = document.getElementById('sailingEnd').value;
+  
+  // 报价模式专用：保存总价显示设置
+  const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
+  if (showQuoteTotalsEl) {
+    data['showQuoteTotals'] = showQuoteTotalsEl.checked;
+  }
+  
   return data;
 }
 
@@ -1374,6 +1592,7 @@ function subscribeToDraft() {
             remarks: getDefaultRemarks(),
             termsConditions: getDefaultTermsConditions(),
             cancellationPolicy: getDefaultCancellationPolicy(),
+            priceIncludes: getDefaultPriceIncludes(),
             invDate: new Date().toISOString().split('T')[0]
         };
 
@@ -1419,6 +1638,33 @@ function subscribeToDraft() {
                 const cancelBox = cancelEl.closest('.input-box');
                 if (cancelEl.value && cancelEl.value.trim() !== '') cancelBox.classList.add('has-val');
                 else cancelBox.classList.remove('has-val');
+            }
+            
+            // Apply Price Includes (报价模式默认值)
+            const priceIncludesEl = document.getElementById('priceIncludes');
+            if (priceIncludesEl) {
+                priceIncludesEl.value = (remoteFields.priceIncludes && remoteFields.priceIncludes.trim()) ? remoteFields.priceIncludes : defaults.priceIncludes;
+                const priceIncludesBox = priceIncludesEl.closest('.input-box');
+                if (priceIncludesBox) {
+                    if (priceIncludesEl.value && priceIncludesEl.value.trim() !== '') priceIncludesBox.classList.add('has-val');
+                    else priceIncludesBox.classList.remove('has-val');
+                }
+            }
+            
+            // Apply Show Quote Totals setting (报价模式)
+            const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
+            if (showQuoteTotalsEl) {
+                // 默认显示总价区域，除非明确设置为 false
+                const showTotals = remoteFields.showQuoteTotals !== false;
+                showQuoteTotalsEl.checked = showTotals;
+                const tableFooter = document.getElementById('quote-table-footer');
+                if (tableFooter) {
+                    if (showTotals) {
+                        tableFooter.classList.remove('hidden');
+                    } else {
+                        tableFooter.classList.add('hidden');
+                    }
+                }
             }
 
             // Apply other fields
@@ -1517,6 +1763,20 @@ window.resetForm = function() {
         cancelEl.value = getDefaultCancellationPolicy();
         const cancelBox = cancelEl.closest('.input-box');
         if (cancelBox) cancelBox.classList.add('has-val');
+      }
+      
+      // 报价模式：重置价格包含和总价显示设置（价格包含使用默认值）
+      const priceIncludesEl = document.getElementById('priceIncludes');
+      if (priceIncludesEl) {
+        priceIncludesEl.value = getDefaultPriceIncludes();
+        const priceIncludesBox = priceIncludesEl.closest('.input-box');
+        if (priceIncludesBox) priceIncludesBox.classList.add('has-val');
+      }
+      const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
+      if (showQuoteTotalsEl) {
+        showQuoteTotalsEl.checked = true;
+        const tableFooter = document.getElementById('quote-table-footer');
+        if (tableFooter) tableFooter.classList.remove('hidden');
       }
       
       // 收起开票信息区域

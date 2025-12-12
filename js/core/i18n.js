@@ -150,6 +150,13 @@ export const translations = {
     // 报价模式预览区
     labelBookingTerms: "预定条件",
     labelCancelPolicy: "取消政策",
+    labelPriceIncludes: "价格包含",
+    subPriceIncludes: "Price Includes",
+    placeholderPriceIncludes: "输入价格包含说明...",
+    labelOtherPayment: "其他付款方式",
+    subOtherPayment: "Other Payment",
+    labelQuoteTotalsSettings: "总价显示",
+    labelShowTotals: "显示总价区域",
     
     // 表格英文副标题
     thSubCabinDesc: "Cabin Description",
@@ -373,6 +380,13 @@ export const translations = {
     // 报价模式预览区
     labelBookingTerms: "Condiciones de Reserva",
     labelCancelPolicy: "Política de Cancelación",
+    labelPriceIncludes: "El Precio Incluye",
+    subPriceIncludes: "Price Includes",
+    placeholderPriceIncludes: "Escriba lo que incluye el precio...",
+    labelOtherPayment: "Otras Formas de Pago",
+    subOtherPayment: "Other Payment",
+    labelQuoteTotalsSettings: "Configuración de Totales",
+    labelShowTotals: "Mostrar área de totales",
     
     // 表格英文副标题
     thSubCabinDesc: "Cabin Description",
@@ -596,6 +610,13 @@ export const translations = {
     // 报价模式预览区
     labelBookingTerms: "Booking Terms",
     labelCancelPolicy: "Cancellation Policy",
+    labelPriceIncludes: "Price Includes",
+    subPriceIncludes: "",
+    placeholderPriceIncludes: "Enter what the price includes...",
+    labelOtherPayment: "Other Payment Methods",
+    subOtherPayment: "",
+    labelQuoteTotalsSettings: "Totals Settings",
+    labelShowTotals: "Show totals area",
     
     // 表格英文副标题
     thSubCabinDesc: "Cabin Description",

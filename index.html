@@ -152,15 +152,15 @@
         <table class="inv-table">
           <thead>
             <tr>
-              <th style="width: 25%"><span data-i18n="thCabinDesc">舱房说明</span></th>
-              <th class="num" style="width: 5%"><span data-i18n="thPax">PAX</span></th>
-              <!-- 报价模式列: PVP → Base → Tasa → HSC → Descuento → Subtotal (均匀分布) -->
-              <th class="num quote-only" style="width: 11.5%"><span data-i18n="thQuotePVP">PVP</span></th>
-              <th class="num quote-only" style="width: 11.5%"><span data-i18n="thQuoteBase">Base</span></th>
-              <th class="num quote-only" style="width: 11.5%"><span data-i18n="thQuoteTasa">Tasa</span></th>
-              <th class="num quote-only" style="width: 11.5%"><span data-i18n="thQuoteHSC">HSC</span></th>
-              <th class="num quote-only quote-descuento-col" style="width: 11.5%;"><span data-i18n="thQuoteDescuento">Descuento</span></th>
-              <th class="num quote-only" style="width: 11.5%"><span data-i18n="thQuoteSubtotal">Subtotal</span></th>
+              <th style="width: 19%"><span data-i18n="thCabinDesc">舱房说明</span></th>
+              <th class="num" style="width: 4%"><span data-i18n="thPax">PAX</span></th>
+              <!-- 报价模式列: PVP → Base → Tasa → HSC → Descuento → Subtotal -->
+              <th class="num quote-only" style="width: 11%"><span data-i18n="thQuotePVP">PVP</span></th>
+              <th class="num quote-only" style="width: 12%"><span data-i18n="thQuoteBase">Base</span></th>
+              <th class="num quote-only" style="width: 11%"><span data-i18n="thQuoteTasa">Tasa</span></th>
+              <th class="num quote-only" style="width: 10%"><span data-i18n="thQuoteHSC">HSC</span></th>
+              <th class="num quote-only quote-descuento-col" style="width: 11%"><span data-i18n="thQuoteDescuento">Descuento</span></th>
+              <th class="num quote-only" style="width: 12%"><span data-i18n="thQuoteSubtotal">Subtotal</span></th>
               <!-- 账单模式列 -->
               <th class="num bill-only" style="width: 10%"><span data-i18n="thGrossPrice">直客价</span></th>
               <th class="num bill-only" style="width: 9%"><span data-i18n="thBaseFare">净船票</span></th>
@@ -171,6 +171,19 @@
             </tr>
           </thead>
           <tbody id="preview-items-body"></tbody>
+          <!-- 报价模式：表格底部汇总行 -->
+          <tfoot id="quote-table-footer" class="quote-only" style="display: none;">
+            <tr class="quote-summary-row">
+              <td class="summary-label"></td>
+              <td class="num" id="display-quote-total-pax">0</td>
+              <td class="num quote-only" id="display-quote-total-pvp">0.00</td>
+              <td class="num quote-only" id="display-quote-total-base">0.00</td>
+              <td class="num quote-only" id="display-quote-total-tasa">0.00</td>
+              <td class="num quote-only" id="display-quote-total-hsc">0.00</td>
+              <td class="num quote-only quote-descuento-col" id="display-quote-footer-descuento"></td>
+              <td class="num quote-only summary-total" id="display-quote-footer-total">0.00</td>
+            </tr>
+          </tfoot>
         </table>
 
         <div class="inv-footer">
@@ -180,10 +193,22 @@
                 <div class="info-title"><span data-i18n="labelPaymentDetails">支付方式</span> <span class="en-sub" data-i18n="subPaymentDetails">Payment Details</span></div>
                 <div class="info-text" data-bind="payment" data-format="multiline"></div>
               </div>
+              <!-- 报价模式：其他付款方式 -->
+              <div class="info-block quote-only" id="other-payment-block" style="border-left-color: #8b5cf6;">
+                <div class="info-title"><span data-i18n="labelOtherPayment">其他付款方式</span> <span class="en-sub" data-i18n="subOtherPayment">Other Payment</span></div>
+                <div class="info-text" id="display-other-payment" data-format="multiline"></div>
+              </div>
               <!-- 账单模式：备注 -->
               <div class="info-block bill-only" style="border-left-color: var(--accent);">
                 <div class="info-title"><span data-i18n="labelRemarksDetails">备注条款</span> <span class="en-sub" data-i18n="subRemarksDetails">Remarks</span></div>
                 <div class="info-text" data-bind="remarks" data-format="multiline"></div>
+              </div>
+            </div>
+            <!-- 报价模式：价格包含说明（右侧） -->
+            <div id="quote-price-includes-right" class="footer-right-quote quote-only" style="display: none;">
+              <div class="info-block" style="border-left-color: #10b981;">
+                <div class="info-title"><span data-i18n="labelPriceIncludes">价格包含</span> <span class="en-sub" data-i18n="subPriceIncludes">Price Includes</span></div>
+                <div class="info-text" data-bind="priceIncludes" data-format="multiline"></div>
               </div>
             </div>
             <div class="footer-right">
@@ -213,24 +238,6 @@
               <div class="net-val" id="display-net">0.00</div>
             </div>
             
-            <!-- 报价模式总价区域 -->
-            <div class="total-row quote-only" style="display: none;">
-              <div class="total-label"><span data-i18n="labelQuoteTotalBase">Total Base</span></div>
-              <div class="total-amount" id="display-quote-base">0.00</div>
-            </div>
-            <div class="total-row quote-only" style="display: none;">
-              <div class="total-label"><span data-i18n="labelQuoteTaxHsc">Tasa + HSC</span></div>
-              <div class="total-amount" id="display-quote-taxhsc">0.00</div>
-            </div>
-            <div class="total-row quote-only" style="display: none;">
-              <div class="total-label"><span data-i18n="labelQuoteSubtotal">Subtotal</span></div>
-              <div class="total-amount" id="display-quote-subtotal">0.00</div>
-            </div>
-            <div id="quote-descuento-row" class="total-row quote-only">
-              <div class="total-label"><span data-i18n="labelQuoteDescuento">Descuento</span></div>
-              <div class="total-amount text-red" id="display-quote-descuento">- 0.00</div>
-            </div>
-            <div class="total-box quote-only" style="display: none;"><div class="total-title"><span data-i18n="labelQuoteTotal">TOTAL</span></div><div class="total-value" id="display-quote-total">0.00</div></div>
             
             <!-- 票据模式总价区域 -->
             <div class="total-box ticket-only" style="display: none; background: #0ea5e9;"><div class="total-title"><span data-i18n="labelTicketTotalPrice">支付金额</span></div><div class="total-value" id="display-ticket-paid">0.00</div></div>
@@ -703,6 +710,31 @@
         </div>
       </div>
       
+      <!-- 价格包含说明（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelPriceIncludes">价格包含</span>
+          <button class="btn btn-sm btn-toggle" onclick="togglePriceIncludes()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="price-includes-wrapper" style="display: none;">
+          <div class="row"><div class="col"><div class="input-box"><textarea id="priceIncludes" rows="3" data-i18n-placeholder="placeholderPriceIncludes" placeholder="输入价格包含说明..." oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      
+      <!-- 总价显示设置（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelQuoteTotalsSettings">总价显示</span>
+        </div>
+        <div class="quote-toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="showQuoteTotals" checked onchange="toggleQuoteTotals()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label" data-i18n="labelShowTotals">显示总价区域</span>
+        </div>
+      </div>
+      
       <!-- 预定条件（报价模式专用） -->
       <div class="form-group quote-only">
         <div class="form-title">
@@ -748,6 +780,6 @@
 <script type="module" src="js/modes/quote-mode.js"></script>
 <script type="module" src="js/modes/ticket-mode.js"></script>
 <script type="module" src="js/modes/compare-mode.js"></script>
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=18"></script>
 </body>
 </html>

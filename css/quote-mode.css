@@ -3,14 +3,48 @@
  * B2C客户报价 - 隐藏敏感信息
  */
 
-/* 报价模式下的footer-right */
+/* 报价模式下的footer-right - 隐藏原有的总价区域 */
 .quote-mode .footer-right {
-  width: 280px !important;
-  min-width: 280px !important;
-  max-width: 280px !important;
-  flex-shrink: 0 !important;
+  display: none !important;
+}
+
+/* 报价模式：footer-top 布局 - 支付方式35%，价格包含65% */
+.quote-mode .footer-top {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.quote-mode .footer-top .footer-left {
+  flex: 0 0 35% !important;
+  width: 35% !important;
+  max-width: 35% !important;
+}
+
+/* 报价模式：价格包含区域（右侧65%） */
+.quote-mode .footer-right-quote {
+  flex: 0 0 65% !important;
+  width: 65% !important;
+  max-width: 65% !important;
   display: flex !important;
   flex-direction: column !important;
+}
+
+.quote-mode .footer-right-quote .info-block {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 4px;
+  padding: 10px 12px;
+  height: 100%;
+}
+
+.quote-mode .footer-right-quote .info-title {
+  color: #059669;
+  font-weight: 600;
+}
+
+.quote-mode .footer-right-quote .info-text {
+  color: #065f46;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 /* 报价模式总价行 */
@@ -176,6 +210,124 @@
 /* 报价模式 form-group 显示 */
 .quote-mode .form-group.quote-only {
   display: block !important;
+}
+
+/* 报价模式 info-block (价格包含等) 显示 */
+.quote-mode .info-block.quote-only {
+  display: block !important;
+}
+
+/* 报价模式：表格底部汇总行 */
+.quote-mode #quote-table-footer {
+  display: table-footer-group !important;
+}
+
+.quote-mode #quote-table-footer.hidden {
+  display: none !important;
+}
+
+.quote-mode .quote-summary-row {
+  background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
+  border-top: 2px solid var(--primary);
+}
+
+.quote-mode .quote-summary-row td {
+  padding: 10px 4px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  vertical-align: middle;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.quote-mode .quote-summary-row td.num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.quote-mode .quote-summary-row .summary-label {
+  text-align: left;
+}
+
+.quote-mode .quote-summary-row .summary-total {
+  font-weight: 700 !important;
+  background: var(--primary);
+  color: white !important;
+  border-radius: 3px;
+  padding: 6px 8px !important;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+/* 汇总行折扣列红色 */
+.quote-mode .quote-summary-row td#display-quote-footer-descuento {
+  color: var(--danger) !important;
+  font-weight: 600 !important;
+}
+
+/* 价格包含区域（右侧）：没有内容时隐藏 */
+.quote-mode #quote-price-includes-right:has(.info-text:empty) {
+  display: none !important;
+}
+
+/* 总价显示切换开关样式 */
+.quote-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: var(--text-sub);
 }
 
 /* 报价模式 footer-bottom 显示（预定条件和取消政策全宽） */

@@ -280,6 +280,12 @@ textarea + .clear-x { top: 12px; transform: none; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.btn-lang.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
 /* ========================================
    模式切换按钮
 ======================================== */
@@ -436,18 +442,10 @@ textarea + .clear-x { top: 12px; transform: none; }
   display: none !important;
 }
 
-/* 报价模式下调整表格列宽，让表头更美观完整 */
-.quote-mode .inv-table th:nth-child(1) { width: 45% !important; }  /* 舱房说明 - 加宽 */
-.quote-mode .inv-table th:nth-child(2) { width: 12% !important; } /* 人数 - 加宽 */
-.quote-mode .inv-table th:nth-child(3) { width: 15% !important; } /* 直客价 - 加宽 */
-.quote-mode .inv-table th:nth-child(6) { width: 14% !important; } /* 税费 - 加宽 */
-.quote-mode .inv-table th:nth-child(7) { width: 14% !important; } /* 服务费 - 加宽 */
-
-.quote-mode .inv-table td:nth-child(1) { width: 45% !important; }
-.quote-mode .inv-table td:nth-child(2) { width: 12% !important; }
-.quote-mode .inv-table td:nth-child(3) { width: 15% !important; }
-.quote-mode .inv-table td:nth-child(6) { width: 14% !important; }
-.quote-mode .inv-table td:nth-child(7) { width: 14% !important; }
+/* 报价模式表格列宽由 HTML 内联样式控制，此处仅添加数字列不换行 */
+.quote-mode .inv-table td.num {
+  white-space: nowrap;
+}
 
 /* 票据模式下调整表格列宽，让表头横条占满整行 */
 .ticket-mode .inv-table th:nth-child(1) { width: 45% !important; }
