@@ -8,25 +8,33 @@
   display: none !important;
 }
 
-/* 报价模式：footer-top 布局 - 支付方式35%，价格包含65% */
+/* 报价模式：footer-top 布局 - 支付方式 与 价格包含 并排 */
 .quote-mode .footer-top {
   display: flex !important;
-  gap: 12px !important;
+  flex-direction: row !important;
+  gap: 16px !important;
+  align-items: stretch !important;
 }
 
 .quote-mode .footer-top .footer-left {
-  flex: 0 0 35% !important;
-  width: 35% !important;
-  max-width: 35% !important;
-}
-
-/* 报价模式：价格包含区域（右侧65%） */
-.quote-mode .footer-right-quote {
-  flex: 0 0 65% !important;
-  width: 65% !important;
-  max-width: 65% !important;
+  flex: 1 1 45% !important;
+  min-width: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  gap: 10px !important;
+}
+
+/* 报价模式：价格包含区域（右侧并排） */
+.quote-mode .footer-right-quote {
+  flex: 1 1 55% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 确保 quote-only 元素在 quote 模式下显示 */
+.quote-mode .footer-right-quote.quote-only {
+  display: flex !important;
 }
 
 .quote-mode .footer-right-quote .info-block {

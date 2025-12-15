@@ -1,5 +1,15 @@
-import { db, auth, ref, set, onValue, get, onAuthStateChanged } from "./core/firebase-config.js";
+// 使用本地存储替代 Firebase Realtime Database
+import { db, ref, set, onValue, get } from "./core/local-storage.js";
 import { t, setLanguage, getCurrentLanguage } from "./core/i18n.js?v=2";
+
+// iframe 通信桥接
+import * as IframeBridge from "./core/iframe-bridge.js";
+
+// 编辑器模块
+import * as Editor from "./editor/index.js";
+import * as EditorState from "./editor/state.js";
+import * as EditorAPI from "./editor/api.js";
+import * as EditorView from "./editor/view.js";
 
 // --- 1. 加载配置数据 ---
 let CONFIG_DATA = null;
@@ -163,8 +173,11 @@ window.switchMode = async function(mode) {
         MODE_MODULES[mode].activate();
     }
     
-    // 更新body的模式类
+    // 更新body的模式类（保留 crm-layout / editor-active / editor-page）
+    const preserveClasses = ['crm-layout', 'editor-active', 'editor-page'];
+    const currentClasses = Array.from(document.body.classList).filter(c => preserveClasses.includes(c));
     document.body.className = mode + '-mode';
+    currentClasses.forEach(c => document.body.classList.add(c));
     
     // 更新按钮状态
     document.getElementById('btn-mode-bill').classList.toggle('active', mode === 'bill');
@@ -958,72 +971,92 @@ function renderDatalist(id, arr) {
 }
 
 function renderClientSelect() {
-  const sel = document.getElementById('clientSelect'); 
+  const sel = document.getElementById('clientSelect');
   sel.innerHTML = `<option value="" data-i18n="selectClient">${t('selectClient')}</option>`;
-  (window.clients || []).forEach((c, i) => { 
+  (window.clients || []).forEach((c, i) => {
+    // 客户类型图标
+    const typeIcons = { personal: '👤', company: '🏢', distributor: '🤝' };
+    const typeIcon = typeIcons[c.customerType] || '👤';
+    
     // 优先显示客户名称，如果有公司信息则附加显示
     let label = c.tradeName || c.company || '未命名客户';
     if (c.company && c.tradeName && c.company !== c.tradeName) {
       label = `${c.tradeName} (${c.company})`;
     }
+    label = `${typeIcon} ${label}`;
+    
     const opt = document.createElement('option'); 
     opt.value = i; 
     opt.text = label; 
     sel.appendChild(opt); 
   });
 }
-window.saveClient = function() {
-  console.log('💾 Saving client...');
+window.saveClient = async function() {
+  console.log('💾 Saving client to Supabase...');
   const tradeName = document.getElementById('billTradeName').value.trim();
-  const company = document.getElementById('billCompany').value.trim(); 
+  const company = document.getElementById('billCompany').value.trim();
+  const customerType = document.getElementById('clientType')?.value || 'personal';
   
   // 客户名称是必填项（直客姓名或企业名）
   if(!tradeName) return alert(t('alertMissingClientName'));
   
-  const newClient={ 
-    tradeName: tradeName, 
+  const customerData = { 
+    name: tradeName,
+    trade_name: tradeName,
+    customer_type: customerType,
     contact: document.getElementById('billContact').value || '',
     company: company,
-    address: document.getElementById('billAddress').value, 
-    rate: document.getElementById('billDefaultRate').value || 0, 
-    addonRate: document.getElementById('billAddonRate').value || 0, 
-    taxId: document.getElementById('billTaxId').value || '' 
+    address: document.getElementById('billAddress').value || '', 
+    default_rate: parseFloat(document.getElementById('billDefaultRate').value) || 0, 
+    addon_rate: parseFloat(document.getElementById('billAddonRate').value) || 0, 
+    tax_id: document.getElementById('billTaxId').value || '' 
   };
   
-  // 使用客户名称（tradeName）作为唯一标识
-  const idx = window.clients.findIndex(c => c.tradeName === tradeName); 
-  let newClientsArr = [...window.clients];
+  // 检查是否选中了现有客户（编辑模式）
+  const idx = document.getElementById('clientSelect').value;
+  const existingClient = idx !== "" ? window.clients[idx] : null;
   
-  if(idx >= 0){ 
-    if(confirm(t('confirmUpdate'))) newClientsArr[idx] = newClient; 
-    else return; 
-  } else newClientsArr.push(newClient);
-  
-  // 保存到Firebase（更新整个settings对象）
-  const settingsPath = `modes/${currentMode}/settings`;
-  const settingsRef = ref(db, settingsPath);
-  console.log('💾 Saving clients to:', settingsPath);
-  
-  // 更新CONFIG_DATA
-  CONFIG_DATA.clients = newClientsArr;
-  
-  // 保存到Firebase
-  set(settingsRef, CONFIG_DATA).then(() => {
-    console.log('✅ Clients saved successfully');
-    // 更新本地数据和缓存
-    window.clients = newClientsArr;
-    CONFIG_CACHE[currentMode] = CONFIG_DATA;
-    renderClientSelect();
+  try {
+    if (existingClient && existingClient.id) {
+      // 更新现有客户
+      if (!confirm(t('confirmUpdate'))) return;
+      await window.SupabaseAPI.customers.update(existingClient.id, customerData);
+      console.log('✅ Customer updated successfully');
+    } else {
+      // 创建新客户
+      await window.SupabaseAPI.customers.create(customerData);
+      console.log('✅ Customer created successfully');
+    }
+    
+    // 重新加载客户列表
+    await loadCustomersFromSupabase();
     alert(t('alertSaved'));
-  }).catch(err => {
-    console.error('❌ Failed to save clients:', err);
-    alert('保存失败！');
-  });
+  } catch (err) {
+    console.error('❌ Failed to save customer:', err);
+    alert('保存失败！' + err.message);
+  }
 }
 
-window.deleteClient = function() {
-  const idx=document.getElementById('clientSelect').value; 
-  if(idx==="") return alert(t('alertSelectClient'));
+// 客户类型变更处理
+window.onClientTypeChange = function() {
+  const selectedType = document.querySelector('input[name="clientType"]:checked')?.value || 'personal';
+  const invoiceWrapper = document.getElementById('invoice-info-wrapper');
+  const invoiceIcon = document.getElementById('invoice-toggle-icon');
+  
+  // 企业和分销商类型自动展开开票信息
+  if (selectedType === 'company' || selectedType === 'distributor') {
+    if (invoiceWrapper) {
+      invoiceWrapper.style.display = 'block';
+      if (invoiceIcon) invoiceIcon.textContent = '▼';
+    }
+  }
+  
+  console.log('📋 客户类型切换为:', selectedType);
+}
+
+window.deleteClient = async function() {
+  const idx = document.getElementById('clientSelect').value; 
+  if(idx === "") return alert(t('alertSelectClient'));
   
   const client = window.clients[idx];
   const clientName = client.tradeName || client.company;
@@ -1037,57 +1070,55 @@ window.deleteClient = function() {
     return;
   }
   
-  console.log('🗑️ Deleting client:', clientName);
+  console.log('🗑️ Deleting client from Supabase:', clientName);
   
-  // 删除客户
-  let newClientsArr = [...window.clients];
-  newClientsArr.splice(idx, 1);
-  
-  // 保存到Firebase（更新整个settings对象）
-  const settingsPath = `modes/${currentMode}/settings`;
-  const settingsRef = ref(db, settingsPath);
-  console.log('💾 Saving updated clients to:', settingsPath);
-  
-  // 更新CONFIG_DATA
-  CONFIG_DATA.clients = newClientsArr;
-  
-  set(settingsRef, CONFIG_DATA).then(() => {
-    console.log('✅ Client deleted successfully');
-    // 更新本地数据和缓存
-    window.clients = newClientsArr;
-    CONFIG_CACHE[currentMode] = CONFIG_DATA;
-    renderClientSelect();
+  try {
+    if (client.id) {
+      await window.SupabaseAPI.customers.delete(client.id);
+    }
+    
+    console.log('✅ Customer deleted successfully');
+    
+    // 重新加载客户列表
+    await loadCustomersFromSupabase();
     document.getElementById('clientSelect').value = '';
-    toggleClientDetails(); // 展开表单以便新增
+    toggleClientDetails();
     alert(t('alertDeleted'));
-  }).catch(err => {
-    console.error('❌ Failed to delete client:', err);
-    alert('删除失败！');
-  });
+  } catch (err) {
+    console.error('❌ Failed to delete customer:', err);
+    alert('删除失败！' + err.message);
+  }
 }
 
 window.selectClient = function() {
-  const idx = document.getElementById('clientSelect').value; 
+  const idx = document.getElementById('clientSelect').value;
   if(idx === "") return;
-  const c = window.clients[idx]; 
-  
+  const c = window.clients[idx];
+
   // 填充客户基本信息
-  document.getElementById('billTradeName').value = c.tradeName || ''; 
+  document.getElementById('billTradeName').value = c.tradeName || '';
   document.getElementById('billContact').value = c.contact || '';
-  document.getElementById('billCompany').value = c.company || ''; 
-  document.getElementById('billAddress').value = c.address || ''; 
-  document.getElementById('billDefaultRate').value = c.rate || 0; 
-  document.getElementById('billAddonRate').value = c.addonRate || 0; 
+  document.getElementById('billCompany').value = c.company || '';
+  document.getElementById('billAddress').value = c.address || '';
+  document.getElementById('billDefaultRate').value = c.rate || 0;
+  document.getElementById('billAddonRate').value = c.addonRate || 0;
   document.getElementById('billTaxId').value = c.taxId || '';
   
+  // 设置客户类型
+  const customerType = c.customerType || 'personal';
+  const typeRadios = document.querySelectorAll('input[name="clientType"]');
+  typeRadios.forEach(radio => {
+    radio.checked = (radio.value === customerType);
+  });
+
   // 更新输入框样式
   ['billTradeName', 'billContact', 'billCompany', 'billAddress', 'billDefaultRate', 'billTaxId', 'billAddonRate'].forEach(id => {
     const el = document.getElementById(id);
     if (el) window.checkClear(el);
   });
-  
+
   // 如果有企业开票信息，自动展开开票信息区域
-  if (c.company || c.taxId) {
+  if (c.company || c.taxId || customerType === 'company' || customerType === 'distributor') {
     const wrapper = document.getElementById('invoice-info-wrapper');
     const icon = document.getElementById('invoice-toggle-icon');
     if (wrapper && wrapper.style.display === 'none') {
@@ -1511,19 +1542,21 @@ function getFieldsData() {
 let saveTimeout;
 let isSaving = false;
 let isLoadingFromFirebase = false;
+let isUserLoggedIn = false; // 跟踪用户登录状态
+
 function saveDraftDebounced() {
     console.log('saveDraftDebounced called', {
-        hasUser: !!auth.currentUser,
+        hasUser: isUserLoggedIn,
         isLoadingFromFirebase,
         currentMode
     });
     
-    if(!auth.currentUser) {
+    if(!isUserLoggedIn) {
         console.warn('❗ No user authenticated');
         return;
     }
     if(isLoadingFromFirebase) {
-        console.log('🔄 Skipping save - loading from Firebase');
+        console.log('🔄 Skipping save - loading from localStorage');
         return; // 防止在加载远程数据时触发保存
     }
     
@@ -1744,77 +1777,103 @@ function subscribeToDraft() {
     });
 }
 
+// 内部函数：执行表单重置（不带确认框）
+function doResetForm() {
+    // 使用模式特定的路径
+    set(ref(db, getModePath('draft')), null); 
+    document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('payment').value = getDefaultPayment();
+    
+    const remarksEl = document.getElementById('remarks');
+    if (remarksEl) remarksEl.value = getDefaultRemarks();
+    
+    document.getElementById('invNo').value = "";
+    document.getElementById('clientSelect').value = "";
+    document.getElementById('billTradeName').value = "";
+    document.getElementById('billContact').value = "";
+    document.getElementById('billCompany').value = "";
+    document.getElementById('billTaxId').value = "";
+    document.getElementById('billAddress').value = "";
+    document.getElementById('billDefaultRate').value = 0;
+    document.getElementById('billAddonRate').value = 0;
+    document.getElementById('ship').value = "";
+    document.getElementById('route').value = "";
+    document.getElementById('sailingStart').value = "";
+    document.getElementById('sailingEnd').value = "";
+    
+    // 报价模式专用字段（预定条件和取消政策使用默认值）
+    const termsEl = document.getElementById('termsConditions');
+    const cancelEl = document.getElementById('cancellationPolicy');
+    if (termsEl) {
+      termsEl.value = getDefaultTermsConditions();
+      const termsBox = termsEl.closest('.input-box');
+      if (termsBox) termsBox.classList.add('has-val');
+    }
+    if (cancelEl) {
+      cancelEl.value = getDefaultCancellationPolicy();
+      const cancelBox = cancelEl.closest('.input-box');
+      if (cancelBox) cancelBox.classList.add('has-val');
+    }
+    
+    // 报价模式：重置价格包含和总价显示设置（价格包含使用默认值）
+    const priceIncludesEl = document.getElementById('priceIncludes');
+    if (priceIncludesEl) {
+      priceIncludesEl.value = getDefaultPriceIncludes();
+      const priceIncludesBox = priceIncludesEl.closest('.input-box');
+      if (priceIncludesBox) priceIncludesBox.classList.add('has-val');
+    }
+    const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
+    if (showQuoteTotalsEl) {
+      showQuoteTotalsEl.checked = true;
+      const tableFooter = document.getElementById('quote-table-footer');
+      if (tableFooter) tableFooter.classList.remove('hidden');
+    }
+    
+    // 收起开票信息区域
+    const invoiceWrapper = document.getElementById('invoice-info-wrapper');
+    const invoiceIcon = document.getElementById('invoice-toggle-icon');
+    if (invoiceWrapper) invoiceWrapper.style.display = 'none';
+    if (invoiceIcon) invoiceIcon.textContent = '▶';
+    
+    // 收起条款区域
+    const termsWrapper = document.getElementById('terms-wrapper');
+    if (termsWrapper) termsWrapper.style.display = 'none';
+    
+    // 票据模式：重置票据专属数据
+    if (window.TicketMode) {
+      window.TicketMode.reset();
+    }
+    
+    // 更新所有输入框状态
+    document.querySelectorAll('.pane-form .input-box').forEach(box => {
+      const input = box.querySelector('input, textarea');
+      if (input) {
+        if (input.value && input.value.trim() !== '') {
+          box.classList.add('has-val');
+        } else {
+          box.classList.remove('has-val');
+        }
+      }
+    });
+    
+    window.items = [{ ...defaultItem, addons:[] }];
+    window.renderItemInputs(); 
+    window.updateState();
+}
+
+// 带确认框的重置（用于工具栏按钮）
 window.resetForm = function() { 
   if(confirm(t('confirmReset'))) { 
-      // 使用模式特定的路径
-      set(ref(db, getModePath('draft')), null); 
-      document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('payment').value = getDefaultPayment();
-      
-      const remarksEl = document.getElementById('remarks');
-      if (remarksEl) remarksEl.value = getDefaultRemarks();
-      
-      document.getElementById('invNo').value = "";
-      document.getElementById('clientSelect').value = "";
-      document.getElementById('billTradeName').value = "";
-      document.getElementById('billContact').value = "";
-      document.getElementById('billCompany').value = "";
-      document.getElementById('billTaxId').value = "";
-      document.getElementById('billAddress').value = "";
-      document.getElementById('billDefaultRate').value = 0;
-      document.getElementById('billAddonRate').value = 0;
-      document.getElementById('ship').value = "";
-      document.getElementById('route').value = "";
-      document.getElementById('sailingStart').value = "";
-      document.getElementById('sailingEnd').value = "";
-      
-      // 报价模式专用字段（预定条件和取消政策使用默认值）
-      const termsEl = document.getElementById('termsConditions');
-      const cancelEl = document.getElementById('cancellationPolicy');
-      if (termsEl) {
-        termsEl.value = getDefaultTermsConditions();
-        const termsBox = termsEl.closest('.input-box');
-        if (termsBox) termsBox.classList.add('has-val');
-      }
-      if (cancelEl) {
-        cancelEl.value = getDefaultCancellationPolicy();
-        const cancelBox = cancelEl.closest('.input-box');
-        if (cancelBox) cancelBox.classList.add('has-val');
-      }
-      
-      // 报价模式：重置价格包含和总价显示设置（价格包含使用默认值）
-      const priceIncludesEl = document.getElementById('priceIncludes');
-      if (priceIncludesEl) {
-        priceIncludesEl.value = getDefaultPriceIncludes();
-        const priceIncludesBox = priceIncludesEl.closest('.input-box');
-        if (priceIncludesBox) priceIncludesBox.classList.add('has-val');
-      }
-      const showQuoteTotalsEl = document.getElementById('showQuoteTotals');
-      if (showQuoteTotalsEl) {
-        showQuoteTotalsEl.checked = true;
-        const tableFooter = document.getElementById('quote-table-footer');
-        if (tableFooter) tableFooter.classList.remove('hidden');
-      }
-      
-      // 收起开票信息区域
-      const invoiceWrapper = document.getElementById('invoice-info-wrapper');
-      const invoiceIcon = document.getElementById('invoice-toggle-icon');
-      if (invoiceWrapper) invoiceWrapper.style.display = 'none';
-      if (invoiceIcon) invoiceIcon.textContent = '▶';
-      
-      // 收起条款区域
-      const termsWrapper = document.getElementById('terms-wrapper');
-      if (termsWrapper) termsWrapper.style.display = 'none';
-      
-      // 票据模式：重置票据专属数据
-      if (window.TicketMode) {
-        window.TicketMode.reset();
-      }
-      
-      window.items = [{ ...defaultItem, addons:[] }];
-      window.renderItemInputs(); 
-      window.updateState();
+    doResetForm();
   } 
+}
+
+// 静默重置（用于创建新单据，不显示确认框）
+window.prepareNewDocument = function() {
+  console.log('📋 Preparing new document...');
+  window.currentBillId = null;
+  doResetForm();
+  console.log('✅ Form reset for new document');
 }
 
 
@@ -1832,79 +1891,392 @@ Object.values(MODE_MODULES).forEach(module => {
 
 console.log('📋 模式模块已初始化，等待用户登录...');
 
-onAuthStateChanged(auth, async (user) => {
-    console.log('🔑 Auth state changed:', user ? `User ID: ${user.uid}` : 'No user');
+// 监听用户角色加载事件（由 auth.js 触发）
+window.addEventListener('userRoleLoaded', async (event) => {
+    const { role, userId } = event.detail;
+    console.log('🔑 User role loaded:', { role, userId });
     
-    if (user) {
-        console.log('✅ User authenticated, initializing...');
-        setStatus('connecting', '加载中...');
-        
-        // 用户登录后再加载配置
-        try {
-            await loadConfig(currentMode);
-            console.log('✅ 配置加载成功');
-        } catch (err) {
-            console.error('❌ 配置加载失败:', err);
-        }
-        
-        setStatus('connected', '已连接');
-        initListeners();
-        updateUILanguage(); // 初始化语言
-        initMode(); // 初始化模式
-        
-        console.log('🎯 Adding input listeners to form elements...');
-        document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(el => {
-          if(!el.closest('#items-container') && el.id!=='sailingStart' && el.id!=='sailingEnd') {
-              el.addEventListener('input', window.updateState);
-          }
-        });
-        console.log('✅ Input listeners added');
-        
-        // 🧹 强力清理：删除所有废弃路径并持续监控
-        const DEPRECATED_PATHS = ['draft', 'draft_compare', 'draft_quote', 'settings', 'settings_bill', 'settings_quote', 'database'];
-        
-        // 清理函数
-        async function cleanDeprecatedPath(path) {
-            try {
-                const pathRef = ref(db, path);
-                const snapshot = await get(pathRef);
-                if (snapshot.exists()) {
-                    console.warn(`🧹 检测到废弃节点 /${path}，正在清理...`);
-                    await set(pathRef, null);
-                    console.log(`✅ 废弃节点 /${path} 已清理`);
-                    return true;
-                }
-            } catch (err) {
-                console.error(`❌ 清理 /${path} 失败:`, err);
-            }
-            return false;
-        }
-        
-        // 立即清理所有废弃路径
-        console.log('🧹 开始清理所有废弃路径...');
-        Promise.all(DEPRECATED_PATHS.map(cleanDeprecatedPath)).then(results => {
-            const cleaned = results.filter(Boolean).length;
-            if (cleaned > 0) {
-                console.log(`✅ 已清理 ${cleaned} 个废弃节点`);
-            } else {
-                console.log('✅ 没有发现废弃节点');
-            }
-        });
-        
-        // 持续监控废弃的 draft 节点（实时删除）
-        const draftWatcher = ref(db, 'draft');
-        onValue(draftWatcher, (snapshot) => {
-            if (snapshot.exists()) {
-                console.warn('🚨 检测到废弃 /draft 节点被重新创建，立即删除！');
-                set(draftWatcher, null).then(() => {
-                    console.log('✅ 废弃 /draft 节点已自动删除');
-                }).catch(err => {
-                    console.error('❌ 自动删除失败:', err);
-                });
-            }
-        });
-    } else {
-        console.warn('⚠️ No user authenticated');
-        setStatus('offline', '未连接');
+    isUserLoggedIn = true;
+    console.log('✅ User authenticated, initializing...');
+    setStatus('connecting', '加载中...');
+    
+    // 初始化编辑器核心（传递 Firebase 引用）
+    Editor.initCore({ db, ref, set, onValue, get });
+    Editor.setUserLoggedIn(true, { role, userId });
+    
+    // 初始化权限 UI
+    initPermissionUI(role);
+    
+    // 用户登录后再加载配置
+    try {
+        await loadConfig(currentMode);
+        console.log('✅ 配置加载成功');
+    } catch (err) {
+        console.error('❌ 配置加载失败:', err);
     }
+    
+    // 从 Supabase 加载客户数据
+    try {
+        await loadCustomersFromSupabase();
+        console.log('✅ 客户数据加载成功');
+    } catch (err) {
+        console.error('❌ 客户数据加载失败:', err);
+    }
+    
+    setStatus('connected', '已连接');
+    initListeners();
+    updateUILanguage(); // 初始化语言
+    initMode(); // 初始化模式
+    
+    // 初始化 iframe 桥接（用于嵌入 Next.js CRM）
+    IframeBridge.initIframeBridge();
+    
+    console.log('🎯 Adding input listeners to form elements...');
+    document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(el => {
+      if(!el.closest('#items-container') && el.id!=='sailingStart' && el.id!=='sailingEnd') {
+          el.addEventListener('input', window.updateState);
+      }
+    });
+    console.log('✅ Input listeners added');
 });
+
+// 从 Supabase 加载客户数据
+async function loadCustomersFromSupabase() {
+    if (!window.SupabaseAPI?.customers?.list) {
+        console.warn('SupabaseAPI.customers.list 未定义');
+        return;
+    }
+
+    try {
+        const customers = await window.SupabaseAPI.customers.list();
+        console.log(`📋 从 Supabase 加载了 ${customers.length} 个客户`);
+
+        // 转换为前端格式
+        window.clients = customers.map(c => ({
+            id: c.id,
+            tradeName: c.name || c.trade_name || '',
+            customerType: c.customer_type || 'personal',
+            contact: c.contact || '',
+            company: c.company || '',
+            taxId: c.tax_id || '',
+            address: c.address || '',
+            rate: c.default_rate || 0,
+            addonRate: c.addon_rate || 0,
+            notes: c.notes || ''
+        }));
+
+        // 重新渲染客户下拉框
+        renderClientSelect();
+    } catch (err) {
+        console.error('加载客户失败:', err);
+        throw err;
+    }
+}
+
+// 监听用户登出
+window.addEventListener('userLoggedOut', () => {
+    isUserLoggedIn = false;
+    setStatus('offline', '未连接');
+    hidePermissionUI();
+    
+    // 更新编辑器状态
+    Editor.setUserLoggedIn(false);
+});
+
+// ============================================
+// 权限管理相关函数
+// ============================================
+
+// 初始化权限 UI
+function initPermissionUI(role) {
+    console.log(`🔐 初始化权限 UI，当前角色: ${role}`);
+    
+    // 显示角色徽章
+    const roleBadge = document.getElementById('user-role-badge');
+    if (roleBadge) {
+        const roleNames = { owner: '👑 Owner', admin: '⭐ Admin', member: '👤 Member' };
+        roleBadge.textContent = roleNames[role] || role;
+        roleBadge.className = `user-role-badge ${role}`;
+        roleBadge.style.display = 'inline-flex';
+    }
+    
+    // 管理员/Owner 显示用户管理按钮
+    const manageUsersBtn = document.getElementById('btn-manage-users');
+    if (manageUsersBtn) {
+        manageUsersBtn.style.display = (role === 'owner' || role === 'admin') ? 'flex' : 'none';
+    }
+}
+
+// 隐藏权限 UI
+function hidePermissionUI() {
+    const roleBadge = document.getElementById('user-role-badge');
+    if (roleBadge) roleBadge.style.display = 'none';
+    
+    const manageUsersBtn = document.getElementById('btn-manage-users');
+    if (manageUsersBtn) manageUsersBtn.style.display = 'none';
+}
+
+// 打开用户管理面板
+window.openUsersPanel = function() {
+    const panel = document.getElementById('users-panel');
+    if (panel) {
+        panel.style.display = 'flex';
+        loadMembersList();
+    }
+};
+
+// 关闭用户管理面板
+window.closeUsersPanel = function() {
+    const panel = document.getElementById('users-panel');
+    if (panel) panel.style.display = 'none';
+};
+
+// 加载成员列表
+async function loadMembersList() {
+    const listContainer = document.getElementById('members-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '<div class="members-loading">加载中...</div>';
+    
+    try {
+        const members = await window.SupabaseAPI?.workspace?.getMembers();
+        if (!members || members.length === 0) {
+            listContainer.innerHTML = '<div class="members-loading">暂无成员</div>';
+            return;
+        }
+        
+        listContainer.innerHTML = members.map(member => `
+            <div class="member-item">
+                <div class="member-info">
+                    <div class="member-avatar">${member.role === 'owner' ? '👑' : member.role === 'admin' ? '⭐' : '👤'}</div>
+                    <div class="member-details">
+                        <div class="member-email">用户 ID: ${member.user_id.substring(0, 8)}...</div>
+                        <div class="member-id">角色: ${member.role}</div>
+                    </div>
+                </div>
+                <div class="member-actions">
+                    <span class="user-role-badge ${member.role}">${member.role}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('加载成员列表失败:', err);
+        listContainer.innerHTML = '<div class="members-loading">加载失败</div>';
+    }
+}
+
+// 添加新成员
+window.addNewMember = async function() {
+    const emailInput = document.getElementById('new-member-email');
+    const roleSelect = document.getElementById('new-member-role');
+    const messageDiv = document.getElementById('add-member-message');
+    
+    const email = emailInput?.value?.trim();
+    const role = roleSelect?.value || 'member';
+    
+    if (!email) {
+        showMessage(messageDiv, '请输入邮箱地址', 'error');
+        return;
+    }
+    
+    try {
+        const result = await window.SupabaseAPI?.users?.manage('add', email, role);
+        showMessage(messageDiv, `✅ ${result.message || '添加成功'}`, 'success');
+        emailInput.value = '';
+        loadMembersList();
+    } catch (err) {
+        showMessage(messageDiv, `❌ ${err.message}`, 'error');
+    }
+};
+
+// 显示消息
+function showMessage(element, text, type) {
+    if (!element) return;
+    element.textContent = text;
+    element.className = `add-member-message ${type}`;
+    setTimeout(() => {
+        element.className = 'add-member-message';
+        element.textContent = '';
+    }, 5000);
+}
+
+// 显示权限提示
+window.showPermissionAlert = function(message) {
+    const dialog = document.getElementById('permission-alert');
+    const textEl = document.getElementById('permission-alert-text');
+    if (dialog && textEl) {
+        textEl.textContent = message || '您没有权限执行此操作';
+        dialog.showModal();
+    }
+};
+
+// 关闭权限提示
+window.closePermissionAlert = function() {
+    const dialog = document.getElementById('permission-alert');
+    if (dialog) dialog.close();
+};
+
+// ============================================
+// 账单列表相关函数
+// ============================================
+
+// 当前账单 ID（用于编辑模式）
+window.currentBillId = null;
+
+// 打开账单列表面板
+window.openBillsList = async function() {
+    const panel = document.getElementById('bills-panel');
+    if (panel) {
+        panel.style.display = 'flex';
+        await loadBillsList();
+    }
+};
+
+// 关闭账单列表面板
+window.closeBillsPanel = function() {
+    const panel = document.getElementById('bills-panel');
+    if (panel) panel.style.display = 'none';
+};
+
+// 加载账单列表
+async function loadBillsList(searchTerm = '') {
+    const listContainer = document.getElementById('bills-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '<div class="bills-loading">加载中...</div>';
+    
+    try {
+        const bills = await window.SupabaseAPI?.bills?.list({ q: searchTerm, limit: 100 });
+        
+        if (!bills || bills.length === 0) {
+            listContainer.innerHTML = '<div class="bills-empty">暂无账单记录</div>';
+            return;
+        }
+        
+        listContainer.innerHTML = bills.map(bill => `
+            <div class="bill-item" onclick="openBill('${bill.id}')">
+                <div class="bill-item-main">
+                    <div class="bill-item-no">#${bill.bill_no}</div>
+                    <div class="bill-item-info">
+                        <div class="bill-item-customer">${bill.customer_name || '未命名客户'}</div>
+                        <div class="bill-item-details">${bill.ship || '-'} | ${bill.route || '-'}</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="bill-item-amount">${(bill.total_amount || 0).toFixed(2)} EUR</div>
+                    <div class="bill-item-date">${bill.bill_date || ''}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('加载账单列表失败:', err);
+        listContainer.innerHTML = '<div class="bills-loading">加载失败</div>';
+    }
+}
+
+// 搜索账单
+window.searchBills = function() {
+    const searchInput = document.getElementById('bills-search-input');
+    const searchTerm = searchInput?.value?.trim() || '';
+    loadBillsList(searchTerm);
+};
+
+// 打开账单（加载到表单中）
+window.openBill = async function(billId) {
+    try {
+        const { bill, items } = await window.SupabaseAPI?.bills?.getFull(billId);
+        
+        if (!bill) {
+            alert('账单不存在');
+            return;
+        }
+        
+        // 保存当前账单 ID
+        window.currentBillId = billId;
+        
+        // 填充表单数据
+        document.getElementById('invNo').value = bill.bill_no || '';
+        document.getElementById('invDate').value = bill.bill_date || '';
+        document.getElementById('billTradeName').value = bill.customer_name || '';
+        document.getElementById('billContact').value = bill.customer_contact || '';
+        document.getElementById('billCompany').value = bill.customer_company || '';
+        document.getElementById('billTaxId').value = bill.customer_tax_id || '';
+        document.getElementById('billAddress').value = bill.customer_address || '';
+        document.getElementById('billDefaultRate').value = bill.default_rate || 0;
+        document.getElementById('billAddonRate').value = bill.addon_rate || 0;
+        document.getElementById('ship').value = bill.ship || '';
+        document.getElementById('route').value = bill.route || '';
+        document.getElementById('sailingStart').value = bill.sailing_start || '';
+        document.getElementById('sailingEnd').value = bill.sailing_end || '';
+        document.getElementById('payment').value = bill.payment || '';
+        
+        const remarksEl = document.getElementById('remarks');
+        if (remarksEl) remarksEl.value = bill.remarks || '';
+        
+        // 加载明细行
+        window.items = items.length > 0 ? items : [{ ...defaultItem, addons: [] }];
+        window.renderItemInputs();
+        window.updateState();
+        
+        // 关闭面板
+        closeBillsPanel();
+        
+        console.log(`✅ 账单 #${bill.bill_no} 已加载`);
+    } catch (err) {
+        console.error('加载账单失败:', err);
+        alert('加载账单失败: ' + err.message);
+    }
+};
+
+// 保存账单到数据库
+window.saveBillToDatabase = async function() {
+    if (!window.SupabaseAPI?.bills?.save) {
+        alert('保存功能未初始化');
+        return;
+    }
+    
+    try {
+        // 收集表单数据
+        const billData = {
+            bill_date: document.getElementById('invDate').value || new Date().toISOString().split('T')[0],
+            mode: currentMode || 'bill',
+            status: 'draft',
+            customer_name: document.getElementById('billTradeName').value || '',
+            customer_contact: document.getElementById('billContact').value || '',
+            customer_company: document.getElementById('billCompany').value || '',
+            customer_tax_id: document.getElementById('billTaxId').value || '',
+            customer_address: document.getElementById('billAddress').value || '',
+            default_rate: parseFloat(document.getElementById('billDefaultRate').value) || 0,
+            addon_rate: parseFloat(document.getElementById('billAddonRate').value) || 0,
+            ship: document.getElementById('ship').value || '',
+            route: document.getElementById('route').value || '',
+            sailing_start: document.getElementById('sailingStart').value || null,
+            sailing_end: document.getElementById('sailingEnd').value || null,
+            payment: document.getElementById('payment').value || '',
+            remarks: document.getElementById('remarks')?.value || '',
+            total_amount: 0,
+            commission: 0,
+            net_amount: 0
+        };
+        
+        // 计算总金额（从 items）
+        const items = window.items || [];
+        
+        // 保存到数据库
+        const result = await window.SupabaseAPI.bills.save(billData, items, window.currentBillId);
+        
+        // 更新当前账单 ID 和编号
+        window.currentBillId = result.bill_id;
+        document.getElementById('invNo').value = result.bill_no;
+        
+        alert(`✅ 账单 #${result.bill_no} 保存成功！`);
+        console.log('✅ 账单保存成功:', result);
+        
+        // 通知父窗口保存成功（如果在 iframe 中）
+        IframeBridge.notifySaved(result.bill_id, currentMode || 'bill');
+    } catch (err) {
+        console.error('保存账单失败:', err);
+        alert('保存失败: ' + err.message);
+        IframeBridge.notifyError(err.message);
+    }
+};

@@ -1,19 +1,8 @@
 /**
- * 认证模块 - 密码登录验证
- * 只需输入密码，系统自动尝试匹配账号
+ * 认证模块 - 邮箱密码登录验证（Supabase 版本）
  */
 
-// 从统一的 Firebase 配置模块导入（避免重复定义）
-import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-config.js';
-
-/**
- * 候选账号配置
- * 登录时会按顺序尝试这些账号
- */
-const ACCOUNTS = [
-  { email: 'fei.zhu@fhglobal.es', role: 'admin' },
-  { email: 'fhglobal@fhglobal.es', role: 'user' }
-];
+import { getSupabase, initWorkspace } from './supabase-config.js';
 
 /**
  * 本地存储键名
@@ -21,21 +10,12 @@ const ACCOUNTS = [
 const STORAGE_KEY = 'viajes_fh_user_role';
 
 /**
- * 根据邮箱获取角色
- */
-function getRoleByEmail(email) {
-  if (!email) return 'user';
-  const account = ACCOUNTS.find(acc => acc.email === email);
-  return account?.role || 'user';
-}
-
-/**
  * 获取存储的角色
  */
 function getStoredRole() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'admin' || stored === 'user') {
+    if (stored === 'owner' || stored === 'admin' || stored === 'member') {
       return stored;
     }
   } catch (e) {
@@ -67,39 +47,58 @@ function clearStoredRole() {
 }
 
 /**
- * 使用密码登录
- * 会依次尝试所有候选账号，直到某个成功为止
- * @param {string} password 用户输入的密码
+ * 使用邮箱和密码登录
+ * @param {string} email 用户邮箱
+ * @param {string} password 用户密码
  * @returns {Promise<{uid: string, email: string, role: string}>}
  */
-async function loginWithPassword(password) {
-  let lastError = null;
+async function loginWithEmailPassword(email, password) {
+  const client = getSupabase();
+  
+  const { data, error } = await client.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+  
+  if (error) {
+    console.error('❌ 登录失败:', error.message);
+    throw new Error(error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
+  }
+  
+  // 不在这里调用 initWorkspace，由 onAuthChange 统一处理
+  // 先使用缓存的角色，后续由 onAuthChange 更新
+  const cachedRole = getStoredRole() || 'member';
+  
+  console.log(`✅ 登录成功: ${email} (待获取角色)`);
+  return {
+    uid: data.user.id,
+    email: data.user.email,
+    role: cachedRole
+  };
+}
 
-  // 遍历所有候选账号
+/**
+ * 仅使用密码登录（尝试多个预设账号）
+ * 兼容原有的密码登录方式
+ */
+async function loginWithPassword(password) {
+  // 预设的候选账号
+  const ACCOUNTS = [
+    { email: 'fei.zhu@fhglobal.es' },
+    { email: 'fhglobal@fhglobal.es' }
+  ];
+  
+  let lastError = null;
+  
   for (const account of ACCOUNTS) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, account.email, password);
-      
-      // 登录成功
-      const user = {
-        uid: userCredential.user.uid,
-        email: account.email,
-        role: account.role
-      };
-      
-      // 保存角色到本地存储
-      storeRole(account.role);
-      
-      console.log(`✅ 登录成功: ${account.email} (${account.role})`);
-      return user;
+      return await loginWithEmailPassword(account.email, password);
     } catch (err) {
-      // 记录错误，继续尝试下一个账号
       lastError = err;
       continue;
     }
   }
-
-  // 所有账号都失败了
+  
   console.error('❌ 所有账号登录失败');
   throw new Error('密码错误，请重试');
 }
@@ -109,7 +108,8 @@ async function loginWithPassword(password) {
  */
 async function logout() {
   try {
-    await signOut(auth);
+    const client = getSupabase();
+    await client.auth.signOut();
     clearStoredRole();
     console.log('✅ 已退出登录');
   } catch (err) {
@@ -119,19 +119,21 @@ async function logout() {
 
 /**
  * 获取当前用户信息
- * @returns {{uid: string, email: string, role: string} | null}
  */
 function getCurrentUser() {
-  const firebaseUser = auth.currentUser;
-  if (!firebaseUser) return null;
+  const client = getSupabase();
+  if (!client) return null;
+  
+  // 同步获取 - 使用缓存的 session
+  const session = client.auth.session?.();
+  if (!session?.user) return null;
   
   const storedRole = getStoredRole();
-  const role = storedRole || getRoleByEmail(firebaseUser.email);
   
   return {
-    uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    role
+    uid: session.user.id,
+    email: session.user.email,
+    role: storedRole || 'member'
   };
 }
 
@@ -139,41 +141,50 @@ function getCurrentUser() {
  * 检查是否是管理员
  */
 function isAdmin() {
-  const user = getCurrentUser();
-  return user?.role === 'admin';
+  const storedRole = getStoredRole();
+  return storedRole === 'owner' || storedRole === 'admin';
 }
 
 /**
  * 监听认证状态变化
- * @param {function} callback 回调函数，参数为用户信息或 null
  */
 function onAuthChange(callback) {
-  return onAuthStateChanged(auth, async (firebaseUser) => {
-    if (firebaseUser) {
-      // 检查是否是匿名用户 - 如果是匿名用户，自动登出
-      if (firebaseUser.isAnonymous || !firebaseUser.email) {
-        console.log('🚫 检测到匿名用户，自动登出...');
-        await signOut(auth);
-        clearStoredRole();
-        callback(null);
-        return;
+  const client = getSupabase();
+  if (!client) {
+    console.error('Supabase 客户端未初始化');
+    return () => {};
+  }
+  
+  const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
+    console.log('🔐 认证状态变化:', event);
+    
+    if (session?.user) {
+      let role = getStoredRole() || 'member';
+      
+      // 如果是新登录，尝试获取工作空间角色（带超时）
+      if (event === 'SIGNED_IN') {
+        console.log('📡 开始初始化工作空间...');
+        try {
+          // 添加 5 秒超时
+          const wsPromise = initWorkspace('Viajes FH');
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('工作空间初始化超时')), 5000)
+          );
+          
+          const ws = await Promise.race([wsPromise, timeoutPromise]);
+          role = ws.role || 'member';
+          storeRole(role);
+          console.log('✅ 工作空间初始化完成，角色:', role);
+        } catch (err) {
+          console.warn('⚠️ 获取工作空间角色失败:', err.message);
+          // 使用缓存的角色或默认角色
+        }
       }
       
-      // 检查是否是允许的账号
-      const isAllowedAccount = ACCOUNTS.some(acc => acc.email === firebaseUser.email);
-      if (!isAllowedAccount) {
-        console.log('🚫 非授权账号，自动登出...');
-        await signOut(auth);
-        clearStoredRole();
-        callback(null);
-        return;
-      }
-      
-      const storedRole = getStoredRole();
-      const role = storedRole || getRoleByEmail(firebaseUser.email);
+      console.log('📤 触发用户状态回调...');
       callback({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
+        uid: session.user.id,
+        email: session.user.email,
         role
       });
     } else {
@@ -181,6 +192,8 @@ function onAuthChange(callback) {
       callback(null);
     }
   });
+  
+  return () => subscription?.unsubscribe();
 }
 
 /**
@@ -192,6 +205,7 @@ function initLoginUI() {
   const loginForm = document.getElementById('login-form');
   const loginError = document.getElementById('login-error');
   const loginBtn = document.getElementById('login-btn');
+  const emailInput = document.getElementById('login-email');
   const passwordInput = document.getElementById('login-password');
   const logoutBtn = document.getElementById('logout-btn');
 
@@ -200,72 +214,180 @@ function initLoginUI() {
     return;
   }
 
-  // 监听认证状态
-  onAuthChange((user) => {
+  // 防止重复处理
+  let hasHandledUser = false;
+  
+  // 处理用户状态的函数
+  const handleUserState = async (user) => {
+    const crmApp = document.querySelector('.crm-app');
+    
     if (user) {
       // 已登录 - 显示应用，隐藏登录界面
       loginScreen.style.display = 'none';
-      appContainer.style.display = 'flex';
       
-      // 更新用户信息显示（只显示角色标签）
+      // 显示 CRM 布局
+      if (crmApp) {
+        crmApp.style.display = 'flex';
+      }
+      
+      // 只在首次登录时隐藏 appContainer，后续认证刷新不影响
+      // 检查编辑器是否正在显示（有 editor-visible 类）
+      const isEditorActive = appContainer?.classList.contains('editor-visible');
+      if (appContainer && !isEditorActive && !hasHandledUser) {
+        appContainer.style.display = 'none';
+      }
+      
+      // 更新用户信息显示（原有）
       const userInfoEl = document.getElementById('current-user-info');
       if (userInfoEl) {
+        const roleMap = { 'owner': '所有者', 'admin': '管理员', 'member': '成员' };
         userInfoEl.innerHTML = `
-          <span class="user-role ${user.role}">${user.role === 'admin' ? '管理员' : '用户'}</span>
+          <span class="user-role ${user.role}">${roleMap[user.role] || '用户'}</span>
         `;
       }
+      
+      // 更新 CRM 侧边栏用户信息
+      const crmUserName = document.getElementById('crm-user-name');
+      const crmUserRole = document.getElementById('crm-user-role');
+      const crmUserAvatar = document.getElementById('crm-user-avatar');
+      const roleMap = { 'owner': '所有者', 'admin': '管理员', 'member': '成员' };
+      
+      if (crmUserName) crmUserName.textContent = user.email?.split('@')[0] || '用户';
+      if (crmUserRole) crmUserRole.textContent = roleMap[user.role] || '成员';
+      if (crmUserAvatar) crmUserAvatar.textContent = (user.email?.[0] || 'U').toUpperCase();
       
       // 显示退出按钮
       if (logoutBtn) {
         logoutBtn.style.display = 'flex';
       }
+      
+      // 只在首次登录时触发角色加载事件
+      if (!hasHandledUser) {
+        hasHandledUser = true;
+        window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
+          detail: { role: user.role, userId: user.uid }
+        }));
+      }
     } else {
       // 未登录 - 显示登录界面，隐藏应用
       loginScreen.style.display = 'flex';
-      appContainer.style.display = 'none';
       
-      // 隐藏退出按钮
+      // 隐藏 CRM 布局
+      if (crmApp) {
+        crmApp.style.display = 'none';
+      }
+      if (appContainer) {
+        appContainer.style.display = 'none';
+      }
+      
       if (logoutBtn) {
         logoutBtn.style.display = 'none';
       }
       
-      // 清空密码输入
+      if (emailInput) {
+        emailInput.value = '';
+      }
       if (passwordInput) {
         passwordInput.value = '';
       }
+      
+      // 触发用户登出事件
+      window.dispatchEvent(new CustomEvent('userLoggedOut'));
     }
-  });
+  };
+
+  // 监听认证状态变化
+  onAuthChange(handleUserState);
+
+  // 立即检查现有会话（解决刷新后卡在登录中的问题）
+  const client = getSupabase();
+  if (client) {
+    console.log('🔍 检查现有会话...');
+    
+    // 设置整体超时，防止永久卡住
+    const sessionCheckTimeout = setTimeout(() => {
+      console.warn('⏰ 会话检查超时，显示登录界面');
+      handleUserState(null);
+    }, 8000);
+    
+    client.auth.getSession().then(async ({ data: { session }, error }) => {
+      clearTimeout(sessionCheckTimeout);
+      
+      if (error) {
+        console.error('❌ 获取会话失败:', error);
+        handleUserState(null);
+        return;
+      }
+      
+      if (session?.user) {
+        console.log('✅ 发现现有会话:', session.user.email);
+        let role = getStoredRole() || 'member';
+        
+        // 尝试获取/刷新工作空间角色（带超时）
+        try {
+          console.log('📡 初始化工作空间...');
+          const wsPromise = initWorkspace('Viajes FH');
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('超时')), 5000)
+          );
+          
+          const ws = await Promise.race([wsPromise, timeoutPromise]);
+          role = ws.role || role;
+          storeRole(role);
+          console.log('✅ 工作空间角色:', role);
+        } catch (wsErr) {
+          console.warn('⚠️ 工作空间初始化失败，使用缓存角色:', role);
+        }
+        
+        handleUserState({
+          uid: session.user.id,
+          email: session.user.email,
+          role
+        });
+      } else {
+        console.log('📭 没有现有会话');
+        handleUserState(null);
+      }
+    }).catch(err => {
+      clearTimeout(sessionCheckTimeout);
+      console.error('❌ 会话检查异常:', err);
+      handleUserState(null);
+    });
+  }
 
   // 登录表单提交
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const email = emailInput?.value?.trim();
       const password = passwordInput?.value?.trim();
-      if (!password) return;
+      
+      if (!email || !password) {
+        if (loginError) {
+          loginError.textContent = '请输入邮箱和密码';
+          loginError.style.display = 'block';
+        }
+        return;
+      }
 
-      // 显示加载状态
       if (loginBtn) {
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<span class="login-spinner"></span> 登录中...';
       }
       
-      // 清除之前的错误
       if (loginError) {
         loginError.style.display = 'none';
       }
 
       try {
-        await loginWithPassword(password);
-        // 登录成功，onAuthChange 会处理界面切换
+        await loginWithEmailPassword(email, password);
       } catch (err) {
-        // 显示错误
         if (loginError) {
           loginError.textContent = err.message || '登录失败，请重试';
           loginError.style.display = 'block';
         }
       } finally {
-        // 恢复按钮状态
         if (loginBtn) {
           loginBtn.disabled = false;
           loginBtn.innerHTML = '登录';
@@ -288,7 +410,6 @@ function initLoginUI() {
       const isPassword = passwordInput.type === 'password';
       passwordInput.type = isPassword ? 'text' : 'password';
       
-      // 切换图标显示
       const eyeOpen = togglePasswordBtn.querySelector('.eye-open');
       const eyeClosed = togglePasswordBtn.querySelector('.eye-closed');
       if (eyeOpen && eyeClosed) {
@@ -301,12 +422,11 @@ function initLoginUI() {
 
 // 导出
 export { 
-  auth, 
-  loginWithPassword, 
+  loginWithPassword,
+  loginWithEmailPassword,
   logout, 
   getCurrentUser, 
   isAdmin, 
   onAuthChange, 
   initLoginUI 
 };
-

@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>符号旅游系统</title>
+  <title>旅行社CRM系统</title>
   
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/bill-mode.css">
-  <link rel="stylesheet" href="css/quote-mode.css">
-  <link rel="stylesheet" href="css/ticket-mode.css">
-  <link rel="stylesheet" href="css/compare-mode.css">
-  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/style.css?v=2025121516">
+  <link rel="stylesheet" href="css/crm-layout.css?v=2025121516">
+  <link rel="stylesheet" href="css/bill-mode.css?v=2025121516">
+  <link rel="stylesheet" href="css/quote-mode.css?v=2025121516">
+  <link rel="stylesheet" href="css/ticket-mode.css?v=2025121516">
+  <link rel="stylesheet" href="css/compare-mode.css?v=2025121516">
+  <link rel="stylesheet" href="css/login.css?v=2025121516">
+  
+  <!-- Supabase JS 库 (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bill-mode">
+<body class="bill-mode crm-layout">
 
 <div id="login-screen" class="login-screen">
   <div class="login-card">
@@ -21,12 +25,16 @@
       <div class="login-logo">
         <img src="logo.png" alt="Logo">
       </div>
-      <h1 class="login-title">符号旅游</h1>
-      <p class="login-subtitle">登陆</p>
+      <h1 class="login-title">旅行社CRM系统</h1>
+      <p class="login-subtitle">Travel Agency CRM</p>
     </div>
     <form id="login-form" class="login-form">
       <div class="form-group-login">
-        <label for="login-password">请输入密码</label>
+        <label for="login-email">邮箱</label>
+        <input type="email" id="login-email" placeholder="请输入邮箱地址" autocomplete="email" autofocus required />
+      </div>
+      <div class="form-group-login">
+        <label for="login-password">密码</label>
         <div class="password-input-wrapper">
           <input 
             type="password" 
@@ -53,20 +61,356 @@
     </form>
   </div>
 </div>
-<div class="app-container" style="display: none;">
-  <div class="pane-preview">
-    <div class="toolbar">
-      <!-- 左侧：用户状态区 -->
-      <div class="toolbar-left">
-        <div class="user-status-wrap">
-          <div id="sync-status" class="sync-indicator">
-            <span class="dot connecting"></span>
+
+<!-- CRM 主布局 -->
+<div class="crm-app" style="display: none;">
+  <!-- 侧边栏 -->
+  <aside class="crm-sidebar">
+    <div class="crm-sidebar-header">
+      <div class="crm-logo">
+        <img src="logo.png" alt="Logo">
+        <span>旅行社CRM系统</span>
+      </div>
+    </div>
+    
+    <nav class="crm-nav">
+      <div class="crm-nav-item" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>数据概览</span>
+      </div>
+      <div class="crm-nav-item" data-view="customers">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        <span>客户管理</span>
+      </div>
+      <div class="crm-nav-item active" data-view="documents">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>单据中心</span>
+      </div>
+      <div class="crm-nav-item" data-view="tracking">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>邮轮订单跟踪</span>
+      </div>
+      <div class="crm-nav-item" data-view="finance">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>财务管理</span>
+      </div>
+      <div class="crm-nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>系统设置</span>
+      </div>
+    </nav>
+    
+    <div class="crm-sidebar-footer">
+      <div class="crm-user-info">
+        <div class="crm-user-avatar" id="crm-user-avatar">U</div>
+        <div class="crm-user-details">
+          <div class="crm-user-name" id="crm-user-name">用户</div>
+          <div class="crm-user-role" id="crm-user-role">成员</div>
+        </div>
+        <button class="crm-logout-btn" onclick="window.crmLogout()" title="退出登录">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- 主内容区 -->
+  <main class="crm-main">
+    <header class="crm-header">
+      <div>
+        <h1 class="crm-page-title">单据中心</h1>
+        <p class="crm-page-subtitle">账单、报价、票据统一管理</p>
+      </div>
+      <!-- 编辑器工具栏区域（编辑时显示） -->
+      <div class="editor-toolbar-area" id="editor-toolbar-area">
+        <!-- 模式切换按钮 -->
+        <div class="mode-switch-group" id="header-mode-tabs">
+          <button class="mode-btn active" data-mode="bill">📋 账单</button>
+          <button class="mode-btn" data-mode="quote">📝 报价</button>
+          <button class="mode-btn" data-mode="ticket">🎫 票据</button>
+          <button class="mode-btn" data-mode="compare">📊 对比</button>
+        </div>
+        <!-- 操作按钮 -->
+        <button class="action-btn" id="header-btn-reset" title="重置">🔄 重置</button>
+        <button class="action-btn primary" id="header-btn-save" title="保存">💾 保存</button>
+        <button class="action-btn" id="header-btn-print" title="打印">🖨️ 打印</button>
+      </div>
+      
+      <div class="crm-header-actions">
+        <div class="crm-lang-switcher">
+          <button class="crm-lang-btn active" onclick="switchLanguage('zh')">中</button>
+          <button class="crm-lang-btn" onclick="switchLanguage('es')">ES</button>
+          <button class="crm-lang-btn" onclick="switchLanguage('en')">EN</button>
+        </div>
+      </div>
+    </header>
+    
+    <div class="crm-content">
+      <!-- 数据概览视图 -->
+      <div id="view-dashboard" class="crm-view">
+        <div class="crm-stats-grid">
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon blue">
+              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">总客户数</div>
+              <div class="crm-stat-value"><span id="stat-customers">0</span><span class="crm-stat-change">↗ +12%</span></div>
+            </div>
           </div>
-          <div id="current-user-info" class="current-user-info"></div>
-          <button id="logout-btn" class="btn-logout-mini" style="display: none;" title="退出登录">
-            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon green">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">本月单据</div>
+              <div class="crm-stat-value"><span id="stat-month-bills">0</span><span class="crm-stat-change">↗ +8%</span></div>
+            </div>
+          </div>
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon orange">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">总营收</div>
+              <div class="crm-stat-value"><span id="stat-total-amount">€0</span><span class="crm-stat-change">↗ +15%</span></div>
+            </div>
+          </div>
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon purple">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">待处理订单</div>
+              <div class="crm-stat-value"><span id="stat-pending">0</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="crm-card">
+          <div class="crm-card-header">
+            <div class="crm-card-title">📊 最近单据</div>
+          </div>
+          <div class="crm-card-body">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>日期</th>
+                  <th>客户</th>
+                  <th>编号</th>
+                  <th>类型</th>
+                  <th>金额</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-recent-bills">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:#9ca3af;">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 客户管理视图 -->
+      <div id="view-customers" class="crm-view">
+        <div style="display:flex;gap:16px;margin-bottom:20px;">
+          <div class="crm-search" style="flex:1;max-width:400px;">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" placeholder="搜索客户姓名、邮箱或电话..." id="customer-search">
+          </div>
+          <button class="crm-btn crm-btn-primary" onclick="window.openAddCustomerForm?.()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            添加客户
           </button>
         </div>
+        
+        <div class="crm-card">
+          <div class="crm-card-body" style="padding:0;">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>客户信息</th>
+                  <th>联系方式</th>
+                  <th>订单数</th>
+                  <th>总消费</th>
+                  <th>状态</th>
+                  <th>最后联系</th>
+                </tr>
+              </thead>
+              <tbody id="customers-table-body">
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af;">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 单据中心视图 -->
+      <div id="view-documents" class="crm-view active">
+        <div class="document-type-tabs">
+          <div class="doc-type-tab active" data-type="all">
+            全部 <span class="count" id="doc-count-all">0</span>
+          </div>
+          <div class="doc-type-tab" data-type="bill">
+            🧾 账单 <span class="count" id="doc-count-bill">0</span>
+          </div>
+          <div class="doc-type-tab" data-type="quote">
+            📝 报价 <span class="count" id="doc-count-quote">0</span>
+          </div>
+          <div class="doc-type-tab" data-type="ticket">
+            🎫 票据 <span class="count" id="doc-count-ticket">0</span>
+          </div>
+          <div class="doc-type-tab" data-type="compare">
+            📊 对比 <span class="count" id="doc-count-compare">0</span>
+          </div>
+        </div>
+        
+        <div class="documents-toolbar" style="display:flex;gap:16px;margin-bottom:20px;">
+          <button class="crm-btn crm-btn-outline" id="btn-back-to-list" style="display:none;" onclick="hideDocumentEditor()">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            返回列表
+          </button>
+          <div class="crm-search" style="flex:1;max-width:400px;">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" placeholder="搜索单据号、客户或目的地..." id="document-search">
+          </div>
+          <button class="crm-btn crm-btn-primary" id="btn-create-doc" onclick="createNewDocument()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            创建单据
+          </button>
+        </div>
+        
+        <div class="crm-card" id="documents-list-card">
+          <div class="crm-card-body" style="padding:0;">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>日期</th>
+                  <th>客户</th>
+                  <th>单据号</th>
+                  <th>类型</th>
+                  <th>目的地</th>
+                  <th>金额</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="documents-table-body">
+                <tr><td colspan="8" style="text-align:center;padding:40px;color:#9ca3af;">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- 单据编辑器外壳 -->
+        <div id="document-editor">
+          <!-- 左侧预览区 -->
+          <div class="editor-main" id="editor-main">
+            <div class="editor-main-scroll" id="editor-main-scroll">
+              <!-- 内容由 JS 动态填充 -->
+            </div>
+          </div>
+          <!-- 右侧表单区 -->
+          <div class="editor-panel" id="editor-panel">
+            <div class="editor-panel-scroll" id="editor-panel-scroll">
+              <!-- 内容由 JS 动态填充 -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 邮轮订单跟踪视图 -->
+      <div id="view-tracking" class="crm-view">
+        <div class="crm-card">
+          <div class="crm-card-header">
+            <div class="crm-card-title">🚢 邮轮订单跟进</div>
+            <div>
+              <button class="crm-btn crm-btn-outline">全部 (0)</button>
+              <button class="crm-btn crm-btn-outline" style="color:#ea580c;border-color:#fed7aa;">待跟进 (0)</button>
+              <button class="crm-btn crm-btn-outline" style="color:#16a34a;border-color:#bbf7d0;">已完成 (0)</button>
+            </div>
+          </div>
+          <div class="crm-card-body">
+            <div class="crm-empty">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <div class="crm-empty-text">暂无邮轮订单</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 财务管理视图 -->
+      <div id="view-finance" class="crm-view">
+        <div class="crm-stats-grid">
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon green">
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">总资产</div>
+              <div class="crm-stat-value">€0</div>
+            </div>
+          </div>
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon blue">
+              <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">账户数量</div>
+              <div class="crm-stat-value">0</div>
+            </div>
+          </div>
+          <div class="crm-stat-card">
+            <div class="crm-stat-icon purple">
+              <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <div class="crm-stat-info">
+              <div class="crm-stat-label">银行账户</div>
+              <div class="crm-stat-value">0</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="crm-card">
+          <div class="crm-card-header">
+            <div class="crm-card-title">💳 账户管理</div>
+            <button class="crm-btn crm-btn-primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              添加账户
+            </button>
+          </div>
+          <div class="crm-card-body">
+            <div class="crm-empty">
+              <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              <div class="crm-empty-text">暂无账户，点击右上角添加账户</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 系统设置视图 -->
+      <div id="view-settings" class="crm-view">
+        <div class="crm-card">
+          <div class="crm-card-body" style="text-align:center;padding:60px;">
+            <svg viewBox="0 0 24 24" width="64" height="64" stroke="#d1d5db" fill="none" stroke-width="1.5" style="margin-bottom:16px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <div style="color:#9ca3af;font-size:15px;">系统设置功能开发中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="app-container">
+  <div class="pane-preview">
+    <div class="toolbar">
+      <!-- 左侧：返回按钮 -->
+      <div class="toolbar-left">
+        <button class="btn-back-to-crm" onclick="backToDocuments()" title="返回单据中心">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span data-i18n="btnBackToList">返回列表</span>
+        </button>
       </div>
       
       <!-- 中间：模式切换 -->
@@ -99,9 +443,17 @@
           <button class="btn-lang" onclick="switchLanguage('en')" title="EN">EN</button>
         </div>
         <div class="action-buttons">
+          <button class="btn-action btn-list" onclick="openBillsList()">
+            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
+            <span data-i18n="btnHistory">历史</span>
+          </button>
           <button class="btn-action btn-reset" onclick="resetForm()">
             <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             <span data-i18n="btnReset">重置</span>
+          </button>
+          <button class="btn-action btn-save" onclick="saveBillToDatabase()">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span data-i18n="btnSave">保存</span>
           </button>
           <button class="btn-action btn-print" onclick="printBill()">
             <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -205,7 +557,7 @@
               </div>
             </div>
             <!-- 报价模式：价格包含说明（右侧） -->
-            <div id="quote-price-includes-right" class="footer-right-quote quote-only" style="display: none;">
+            <div id="quote-price-includes-right" class="footer-right-quote quote-only">
               <div class="info-block" style="border-left-color: #10b981;">
                 <div class="info-title"><span data-i18n="labelPriceIncludes">价格包含</span> <span class="en-sub" data-i18n="subPriceIncludes">Price Includes</span></div>
                 <div class="info-text" data-bind="priceIncludes" data-format="multiline"></div>
@@ -722,6 +1074,26 @@
         </div>
         
         <div id="client-details-wrapper">
+          <!-- 客户类型选择 -->
+          <div class="row" style="margin-bottom: 10px;">
+            <div class="col">
+              <label data-i18n="labelClientType">客户类型</label>
+              <div class="client-type-selector">
+                <label class="type-option">
+                  <input type="radio" name="clientType" id="clientType" value="personal" checked onchange="onClientTypeChange()">
+                  <span class="type-label" data-i18n="typePersonal">👤 个人</span>
+                </label>
+                <label class="type-option">
+                  <input type="radio" name="clientType" value="company" onchange="onClientTypeChange()">
+                  <span class="type-label" data-i18n="typeCompany">🏢 企业</span>
+                </label>
+                <label class="type-option">
+                  <input type="radio" name="clientType" value="distributor" onchange="onClientTypeChange()">
+                  <span class="type-label" data-i18n="typeDistributor">🤝 分销商</span>
+                </label>
+              </div>
+            </div>
+          </div>
           <!-- 基本信息：直客/企业客户通用 -->
           <div class="row">
             <div class="col"><label data-i18n="labelClientName">客户名称</label><div class="input-box"><input type="text" id="billTradeName" data-i18n-placeholder="placeholderClientName" placeholder="姓名 / 企业名" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
@@ -913,15 +1285,99 @@
     </div>
   </div>
 </div>
-<script src="js/core/security.js"></script>
-<script type="module">import{initLoginUI as i}from'./js/core/auth.js';document.addEventListener('DOMContentLoaded',i);</script>
-<script type="module" src="js/core/utils.js"></script>
-<script type="module" src="js/core/firebase-config.js"></script>
-<script type="module" src="js/core/i18n.js"></script>
-<script type="module" src="js/modes/bill-mode.js"></script>
-<script type="module" src="js/modes/quote-mode.js"></script>
-<script type="module" src="js/modes/ticket-mode.js"></script>
-<script type="module" src="js/modes/compare-mode.js"></script>
-<script type="module" src="js/main.js?v=18"></script>
+
+<!-- 账单列表面板 -->
+<div id="bills-panel" class="bills-panel" style="display: none;">
+  <div class="bills-panel-overlay" onclick="closeBillsPanel()"></div>
+  <div class="bills-panel-content">
+    <div class="bills-panel-header">
+      <h3>📋 账单历史</h3>
+      <div class="bills-search">
+        <input type="text" id="bills-search-input" placeholder="搜索编号或客户名..." oninput="searchBills()" />
+      </div>
+      <button class="bills-panel-close" onclick="closeBillsPanel()">×</button>
+    </div>
+    <div class="bills-panel-body">
+      <div id="bills-list" class="bills-list">
+        <div class="bills-loading">加载中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 用户管理面板 -->
+<div id="users-panel" class="users-panel" style="display: none;">
+  <div class="users-panel-overlay" onclick="closeUsersPanel()"></div>
+  <div class="users-panel-content">
+    <div class="users-panel-header">
+      <h3>👥 用户与权限管理</h3>
+      <button class="users-panel-close" onclick="closeUsersPanel()">×</button>
+    </div>
+    <div class="users-panel-body">
+      <div class="add-member-form">
+        <h4>添加新成员</h4>
+        <div class="add-member-row">
+          <input type="email" id="new-member-email" placeholder="输入邮箱地址" />
+          <select id="new-member-role">
+            <option value="member">👤 普通成员</option>
+            <option value="admin">⭐ 管理员</option>
+          </select>
+          <button onclick="addNewMember()">添加</button>
+        </div>
+        <div id="add-member-message" class="add-member-message"></div>
+      </div>
+      <div class="members-list-section">
+        <h4>当前成员</h4>
+        <div id="members-list" class="members-list">
+          <div class="members-loading">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 权限提示对话框 -->
+<dialog id="permission-alert" class="permission-alert">
+  <div class="permission-alert-content">
+    <div class="permission-alert-icon">🔒</div>
+    <div class="permission-alert-text" id="permission-alert-text">您没有权限执行此操作</div>
+    <button class="permission-alert-btn" onclick="closePermissionAlert()">确定</button>
+  </div>
+</dialog>
+
+<!-- 核心脚本 -->
+<script src="js/core/security.js?v=20251215"></script>
+<script type="module" src="js/core/utils.js?v=20251215"></script>
+<script type="module" src="js/core/i18n.js?v=20251215"></script>
+
+<!-- CRM 导航 -->
+<script src="js/core/crm-nav.js?v=2025121508"></script>
+
+<!-- 编辑器模块 -->
+<script type="module" src="js/editor/state.js?v=2025121508"></script>
+<script type="module" src="js/editor/api.js?v=2025121508"></script>
+<script type="module" src="js/editor/view.js?v=2025121508"></script>
+<script type="module" src="js/editor/index.js?v=2025121508"></script>
+
+<!-- 模式模块 -->
+<script type="module" src="js/modes/bill-mode.js?v=20251215"></script>
+<script type="module" src="js/modes/quote-mode.js?v=20251215"></script>
+<script type="module" src="js/modes/ticket-mode.js?v=20251215"></script>
+<script type="module" src="js/modes/compare-mode.js?v=20251215"></script>
+
+<!-- 主程序和认证 -->
+<script type="module" src="js/main.js?v=20251215"></script>
+<script type="module">
+  import { initLoginUI, logout } from './js/core/auth.js?v=2025121506';
+  
+  // CRM 登出
+  window.crmLogout = logout;
+  
+  // DOM 加载完成后初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 DOM loaded, initializing login UI...');
+    initLoginUI();
+  });
+</script>
 </body>
 </html>
