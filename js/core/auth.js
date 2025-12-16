@@ -215,6 +215,13 @@ function initLoginUI() {
     return;
   }
 
+  // 嵌入模式：跳过登录 UI 初始化，等待 session bridge
+  if (isEmbeddedMode()) {
+    console.log('📡 嵌入模式：跳过登录 UI，等待 session bridge');
+    loginScreen.style.display = 'none';
+    return;
+  }
+
   // 防止重复处理
   let hasHandledUser = false;
   
@@ -270,8 +277,10 @@ function initLoginUI() {
         }));
       }
     } else {
-      // 未登录 - 显示登录界面，隐藏应用
-      loginScreen.style.display = 'flex';
+      // 未登录 - 显示登录界面，隐藏应用（仅非嵌入模式）
+      if (!isEmbeddedMode()) {
+        loginScreen.style.display = 'flex';
+      }
       
       // 隐藏 CRM 布局
       if (crmApp) {
@@ -421,6 +430,16 @@ function initLoginUI() {
   }
 }
 
+// 全局标记：是否已通过 bridge 设置 session
+let sessionSetViabridge = false;
+
+/**
+ * 检查是否已通过 bridge 设置 session
+ */
+function hasSessionViaBridge() {
+  return sessionSetViabridge;
+}
+
 /**
  * 监听来自父窗口的会话注入（iframe 嵌入模式）
  * 当 Next.js CRM 通过 postMessage 发送会话时，接收并设置
@@ -432,6 +451,18 @@ function initSessionBridge() {
   }
   
   console.log('📡 初始化 session bridge（嵌入模式）');
+  
+  // 嵌入模式下：隐藏登录界面，显示等待提示
+  const loginScreen = document.getElementById('login-screen');
+  const crmApp = document.querySelector('.crm-app');
+  const appContainer = document.querySelector('.app-container');
+  
+  if (loginScreen) {
+    loginScreen.style.display = 'none';
+  }
+  if (crmApp) {
+    crmApp.style.display = 'none';
+  }
   
   window.addEventListener('message', async (event) => {
     const { type, access_token, refresh_token } = event.data || {};
@@ -459,6 +490,7 @@ function initSessionBridge() {
       }
       
       console.log('✅ 会话设置成功:', data.user?.email);
+      sessionSetViabridge = true;
       
       // 发送确认消息给父窗口
       postToParent('FH_SESSION_ACK', { success: true, email: data.user?.email });
@@ -469,12 +501,28 @@ function initSessionBridge() {
         storeRole(ws.role || 'member');
         console.log('✅ 工作空间已初始化:', ws.role);
         
-        // 触发 UI 更新事件
+        // 触发 UI 更新事件 - 这将触发编辑器初始化
         window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
           detail: { role: ws.role, userId: data.user?.id }
         }));
+        
+        // 嵌入模式：直接显示编辑器，不显示 CRM 导航
+        if (appContainer) {
+          appContainer.style.display = 'flex';
+          appContainer.classList.add('editor-visible', 'embedded-mode');
+        }
+        
+        // 触发编辑器打开事件（如果 URL 中有编辑器参数）
+        window.dispatchEvent(new CustomEvent('sessionReady'));
+        
       } catch (wsErr) {
         console.warn('⚠️ 工作空间初始化失败:', wsErr.message);
+        // 即使工作空间失败，也尝试显示编辑器
+        if (appContainer) {
+          appContainer.style.display = 'flex';
+          appContainer.classList.add('editor-visible', 'embedded-mode');
+        }
+        window.dispatchEvent(new CustomEvent('sessionReady'));
       }
       
     } catch (err) {

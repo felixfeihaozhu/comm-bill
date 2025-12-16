@@ -8,6 +8,9 @@ import * as IframeBridge from "./core/iframe-bridge.js";
 // 认证模块（用于 session bridge）
 import { initSessionBridge } from "./core/auth.js";
 
+// 立即初始化 session bridge（在嵌入模式下需要尽早监听）
+initSessionBridge();
+
 // 编辑器模块
 import * as Editor from "./editor/index.js";
 import * as EditorState from "./editor/state.js";
@@ -288,8 +291,19 @@ function updateDocumentTitle() {
     document.title = newTitle;
 }
 
-// 初始化模式（从 localStorage 读取）
+// 初始化模式（从 localStorage 或 URL 参数读取）
 function initMode() {
+    // 嵌入模式：从 URL 参数读取
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '');
+    const urlMode = urlParams.get('type');
+    
+    if (urlMode && ['bill', 'quote', 'ticket', 'compare'].includes(urlMode)) {
+        console.log('📋 从 URL 参数初始化模式:', urlMode);
+        window.switchMode(urlMode);
+        return;
+    }
+    
+    // 非嵌入模式：从 localStorage 读取
     const savedMode = localStorage.getItem('viewMode') || 'bill';
     window.switchMode(savedMode);
 }
@@ -1933,9 +1947,6 @@ window.addEventListener('userRoleLoaded', async (event) => {
     
     // 初始化 iframe 桥接（用于嵌入 Next.js CRM）
     IframeBridge.initIframeBridge();
-    
-    // 初始化 session 桥接（接收父窗口发送的会话）
-    initSessionBridge();
     
     console.log('🎯 Adding input listeners to form elements...');
     document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(el => {

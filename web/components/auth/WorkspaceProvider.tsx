@@ -73,30 +73,32 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  // 初始化
+  // 初始化和用户变化时加载
   useEffect(() => {
     // 等待 auth 加载完成
     if (authLoading) return;
 
-    // 防止重复初始化
-    if (initialized.current) return;
-    initialized.current = true;
-
-    loadWorkspaces();
-  }, [authLoading, loadWorkspaces]);
-
-  // 用户变化时重新加载
-  useEffect(() => {
-    if (!authLoading && initialized.current) {
-      // 用户变化时重置状态
-      if (!user) {
-        setWorkspaces([]);
-        setCurrentWorkspace(null);
-        clearCurrentWorkspaceId();
-        setLoading(false);
-      }
+    if (!user) {
+      // 用户未登录时清空
+      setWorkspaces([]);
+      setCurrentWorkspace(null);
+      clearCurrentWorkspaceId();
+      setLoading(false);
+      initialized.current = false;
+      return;
     }
-  }, [user, authLoading]);
+
+    // 已登录但未初始化，或者 workspaces 为空但有缓存的 ID
+    const savedId = getCurrentWorkspaceId();
+    const needsLoad = !initialized.current || 
+      (workspaces.length === 0 && savedId) ||
+      (savedId && !currentWorkspace);
+
+    if (needsLoad) {
+      initialized.current = true;
+      loadWorkspaces();
+    }
+  }, [authLoading, user, loadWorkspaces, workspaces.length, currentWorkspace]);
 
   // 切换工作空间
   const switchWorkspace = useCallback(
