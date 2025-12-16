@@ -1,39 +1,65 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { UserCircle, Plus, Search, Loader2, Building2, Phone, Mail } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { UserCircle, Plus, Search, Loader2, Building2 } from 'lucide-react';
 import { getCustomers, Customer } from '@/lib/supabase';
 import { useWorkspace } from '@/components/auth/WorkspaceProvider';
 import { useToast } from '@/components/ui/Toast';
 
 export default function CustomersPage() {
-  const { currentWorkspace, loading: wsLoading } = useWorkspace();
+  const { currentWorkspace, currentWorkspaceId, loading: wsLoading } = useWorkspace();
   const { showToast, ToastContainer } = useToast();
   
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  // 防止重复加载
+  const loadingRef = useRef(false);
+  const lastWorkspaceId = useRef<string | null>(null);
+
+  // 搜索防抖
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // 加载客户列表
-  const loadCustomers = useCallback(async () => {
-    if (!currentWorkspace) return;
-    
-    setLoading(true);
-    try {
-      const data = await getCustomers({ search: searchTerm, limit: 100 });
-      setCustomers(data);
-    } catch (err: any) {
-      showToast('加载客户列表失败', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentWorkspace, searchTerm, showToast]);
-
   useEffect(() => {
-    if (currentWorkspace) {
-      loadCustomers();
+    if (!currentWorkspaceId || wsLoading) {
+      setLoading(false);
+      return;
     }
-  }, [currentWorkspace, loadCustomers]);
+    
+    // 防止重复加载
+    if (loadingRef.current) return;
+    
+    const loadCustomers = async () => {
+      loadingRef.current = true;
+      
+      // 只在 workspace 变化或首次加载时显示 loading
+      if (lastWorkspaceId.current !== currentWorkspaceId) {
+        setLoading(true);
+        lastWorkspaceId.current = currentWorkspaceId;
+      }
+      
+      try {
+        const data = await getCustomers({ search: debouncedSearch, limit: 100 });
+        setCustomers(data);
+      } catch (err: any) {
+        console.error('加载客户列表失败:', err);
+        showToast('加载客户列表失败', 'error');
+      } finally {
+        setLoading(false);
+        loadingRef.current = false;
+      }
+    };
+    
+    loadCustomers();
+  }, [currentWorkspaceId, debouncedSearch, wsLoading]); // 移除 showToast 依赖
 
   if (wsLoading) {
     return (
@@ -157,5 +183,6 @@ export default function CustomersPage() {
     </div>
   );
 }
+
 
 

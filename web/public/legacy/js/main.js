@@ -1918,7 +1918,7 @@ window.addEventListener('userRoleLoaded', async (event) => {
     setStatus('connecting', '加载中...');
     
     // 初始化编辑器核心（传递存储引用）
-    Editor.initCore({ db, ref, set, onValue, get });
+    Editor.initEditorCore({ db, ref, set, onValue, get });
     Editor.setUserLoggedIn(true, { role, userId });
     
     // 初始化权限 UI

@@ -1576,10 +1576,40 @@ body.embedded-mode .app-container {
 
 body.embedded-mode .pane-split {
   height: 100vh;
+  display: flex;
+  width: 100%;
 }
 
-body.embedded-mode .pane-preview,
-body.embedded-mode .pane-form {
+body.embedded-mode .pane-preview {
+  flex: 1;
+  min-width: 400px;
   height: 100vh;
   overflow-y: auto;
+}
+
+body.embedded-mode .pane-form {
+  width: 520px;
+  min-width: 420px;
+  max-width: 600px;
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+}
+
+/* 嵌入模式下表单内输入框统一宽度 */
+body.embedded-mode .form-group .row {
+  flex-wrap: nowrap;
+}
+
+body.embedded-mode .form-group .col {
+  flex: 1;
+  min-width: 0;
+}
+
+body.embedded-mode .form-group input,
+body.embedded-mode .form-group select,
+body.embedded-mode .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
 }

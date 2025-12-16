@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, RefreshCw, Loader2, Building2, AlertCircle } from 'lucide-react';
 import { getDocuments, deleteDocument, type DocumentRow, type DocType } from '@/lib/supabase';
@@ -14,7 +14,7 @@ function DocumentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast, ToastContainer } = useToast();
-  const { currentWorkspace, loading: wsLoading, error: wsError } = useWorkspace();
+  const { currentWorkspace, currentWorkspaceId, loading: wsLoading, error: wsError } = useWorkspace();
   
   // 从 URL 读取初始状态
   const initialTab = (searchParams.get('tab') as DocType | 'all') || 'all';
@@ -23,53 +23,68 @@ function DocumentsContent() {
   
   const [activeTab, setActiveTab] = useState<DocType | 'all'>(initialTab);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  
+  // 防止重复加载
+  const loadingRef = useRef(false);
+  const lastParamsRef = useRef<string>('');
 
-  // 加载数据（RLS 自动按 workspace 过滤）
-  const loadDocuments = useCallback(async (showRefreshing = false) => {
-    if (!currentWorkspace) {
-      setDocuments([]);
-      setLoading(false);
-      setInitialLoadDone(true);
+  // 搜索防抖
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // 加载数据
+  const loadDocuments = async (forceRefresh = false) => {
+    if (!currentWorkspaceId || wsLoading) {
+      if (!wsLoading) setInitialLoadDone(true);
       return;
     }
     
-    if (showRefreshing) setRefreshing(true);
+    // 构建参数指纹，防止重复加载
+    const paramsKey = `${currentWorkspaceId}-${activeTab}-${debouncedSearch}`;
+    if (!forceRefresh && (loadingRef.current || lastParamsRef.current === paramsKey)) return;
+    
+    loadingRef.current = true;
+    if (!forceRefresh) lastParamsRef.current = paramsKey;
+    
+    if (forceRefresh) setRefreshing(true);
     else setLoading(true);
     setLoadError(null);
     
     try {
       const mode = activeTab === 'all' ? undefined : activeTab;
-      const data = await getDocuments({ mode, search: searchTerm, limit: 100 });
+      const data = await getDocuments({ mode, search: debouncedSearch, limit: 100 });
       setDocuments(data || []);
     } catch (error) {
       console.error('加载单据失败:', error);
       setLoadError(error instanceof Error ? error.message : '加载单据失败');
-      showToast('加载单据失败', 'error');
       setDocuments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
       setInitialLoadDone(true);
+      loadingRef.current = false;
     }
-  }, [activeTab, searchTerm, showToast, currentWorkspace]);
+  };
 
-  // 初始加载和 tab/search/workspace 变化时重新加载
+  // 初始加载和参数变化时加载
   useEffect(() => {
-    if (!wsLoading && currentWorkspace) {
-      loadDocuments();
-    } else if (!wsLoading && !currentWorkspace) {
-      setInitialLoadDone(true);
-    }
-  }, [loadDocuments, currentWorkspace, wsLoading]);
+    loadDocuments();
+  }, [currentWorkspaceId, activeTab, debouncedSearch, wsLoading]);
 
   // 监听 refresh 参数变化（从编辑器返回时）
   useEffect(() => {
-    if (refreshFlag && currentWorkspace && !wsLoading) {
+    if (refreshFlag && currentWorkspaceId && !wsLoading) {
+      lastParamsRef.current = ''; // 清除缓存强制刷新
       loadDocuments(true);
       showToast('单据已保存', 'success');
       // 清除 refresh 参数
@@ -78,7 +93,7 @@ function DocumentsContent() {
       const newUrl = params.toString() ? `/documents?${params.toString()}` : '/documents';
       router.replace(newUrl);
     }
-  }, [refreshFlag, loadDocuments, router, searchParams, showToast, currentWorkspace, wsLoading]);
+  }, [refreshFlag]);
 
   // 切换 tab
   const handleTabChange = (tab: DocType | 'all') => {
@@ -109,6 +124,12 @@ function DocumentsContent() {
       console.error('删除单据失败:', error);
       showToast('删除失败', 'error');
     }
+  };
+
+  // 刷新按钮
+  const handleRefresh = () => {
+    lastParamsRef.current = '';
+    loadDocuments(true);
   };
 
   // 工作空间加载中
@@ -170,7 +191,7 @@ function DocumentsContent() {
           <p className="text-lg text-gray-700">加载单据失败</p>
           <p className="text-gray-500 mt-2">{loadError}</p>
           <button
-            onClick={() => loadDocuments()}
+            onClick={handleRefresh}
             className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             重试
@@ -210,7 +231,7 @@ function DocumentsContent() {
           </div>
           
           <button
-            onClick={() => loadDocuments(true)}
+            onClick={handleRefresh}
             disabled={refreshing || loading}
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             title="刷新"
@@ -225,7 +246,7 @@ function DocumentsContent() {
         documents={documents}
         loading={loading && !initialLoadDone}
         onDelete={handleDelete}
-        onRefresh={() => loadDocuments(true)}
+        onRefresh={handleRefresh}
       />
 
       {/* Footer */}
@@ -250,6 +271,3 @@ export default function DocumentsPage() {
     </Suspense>
   );
 }
-
-
-
