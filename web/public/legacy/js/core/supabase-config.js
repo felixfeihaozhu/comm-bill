@@ -6,6 +6,9 @@
 const SUPABASE_URL = 'https://dszqampcpmvoywjqbfyj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzenFhbXBjcG12b3l3anFiZnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTczMzgsImV4cCI6MjA4MTEzMzMzOH0.UMeV0gO9jY7g4vUM2DHbzY_YAXQy5ckTbKP8ElfBMxg';
 
+// 统一的 storageKey - 必须与 Next.js 端一致才能共享 session
+const AUTH_STORAGE_KEY = 'fh-oms-auth';
+
 let supabaseClient = null;
 let currentWorkspaceId = null; // 缓存当前工作空间 ID
 let currentUserRole = null; // 缓存当前用户角色: 'owner' | 'admin' | 'member'
@@ -13,8 +16,15 @@ let currentUserId = null; // 缓存当前用户 ID
 
 function getSupabase() {
     if (!supabaseClient && typeof supabase !== 'undefined') {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase 客户端初始化成功');
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storageKey: AUTH_STORAGE_KEY  // 与 Next.js 共享 session
+            }
+        });
+        console.log('✅ Supabase 客户端初始化成功 (storageKey:', AUTH_STORAGE_KEY, ')');
     }
     return supabaseClient;
 }

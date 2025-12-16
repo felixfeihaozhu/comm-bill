@@ -430,15 +430,8 @@ function initLoginUI() {
   }
 }
 
-// 全局标记：是否已通过 bridge 设置 session
-let sessionSetViabridge = false;
-
-/**
- * 检查是否已通过 bridge 设置 session
- */
-function hasSessionViaBridge() {
-  return sessionSetViabridge;
-}
+// 全局标记：嵌入模式是否已初始化
+let embeddedModeInitialized = false;
 
 /**
  * 在嵌入模式下配置纯编辑器视图
@@ -466,75 +459,89 @@ function setupEmbeddedEditorView() {
 }
 
 /**
- * 监听来自父窗口的会话注入（iframe 嵌入模式）
- * 当 Next.js CRM 通过 postMessage 发送会话时，接收并设置
+ * 显示嵌入模式错误消息
  */
-function initSessionBridge() {
+function showEmbeddedError(message) {
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;font-family:system-ui,sans-serif;">
+        <div style="font-size:48px;">⚠️</div>
+        <div style="font-size:18px;color:#e53935;font-weight:500;">${message}</div>
+        <div style="font-size:14px;color:#666;">请返回单据中心重新登录</div>
+      </div>
+    `;
+  }
+  // 通知父窗口
+  postToParent('editor:error', { message });
+}
+
+/**
+ * 嵌入模式初始化
+ * 同域名下 Next.js 和 Legacy 共享同一个 localStorage，所以 session 自动共享
+ * 不需要通过 postMessage 传递 session
+ */
+async function initSessionBridge() {
   if (!isEmbeddedMode()) {
     console.log('📭 非嵌入模式，跳过 session bridge');
     return;
   }
   
-  console.log('📡 初始化 session bridge（嵌入模式）');
+  if (embeddedModeInitialized) {
+    console.log('📭 嵌入模式已初始化，跳过');
+    return;
+  }
+  
+  embeddedModeInitialized = true;
+  console.log('📡 初始化嵌入模式（同域名 session 共享）');
   
   // 立即配置嵌入模式视图
   setupEmbeddedEditorView();
   
-  window.addEventListener('message', async (event) => {
-    const { type, access_token, refresh_token } = event.data || {};
+  try {
+    const client = getSupabase();
     
-    if (type !== 'FH_SUPABASE_SESSION') return;
+    // 同域名下 localStorage 共享，直接获取已有的 session
+    const { data: { session }, error } = await client.auth.getSession();
     
-    console.log('📥 收到父窗口发送的会话');
-    
-    if (!access_token || !refresh_token) {
-      console.warn('⚠️ 会话数据不完整');
+    if (error) {
+      console.error('❌ 获取 session 失败:', error);
+      showEmbeddedError('会话获取失败: ' + error.message);
       return;
     }
     
-    try {
-      const client = getSupabase();
-      const { data, error } = await client.auth.setSession({
-        access_token,
-        refresh_token
-      });
-      
-      if (error) {
-        console.error('❌ 设置会话失败:', error);
-        postToParent('editor:error', { message: '会话同步失败: ' + error.message });
-        return;
-      }
-      
-      console.log('✅ 会话设置成功:', data.user?.email);
-      sessionSetViabridge = true;
-      
-      // 发送确认消息给父窗口
-      postToParent('FH_SESSION_ACK', { success: true, email: data.user?.email });
-      
-      // 初始化工作空间
-      try {
-        const ws = await initWorkspace('Viajes FH');
-        storeRole(ws.role || 'member');
-        console.log('✅ 工作空间已初始化:', ws.role);
-        
-        // 触发 UI 更新事件 - 这将触发编辑器初始化
-        window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
-          detail: { role: ws.role, userId: data.user?.id }
-        }));
-        
-      } catch (wsErr) {
-        console.warn('⚠️ 工作空间初始化失败:', wsErr.message);
-        // 即使工作空间失败，也触发事件让编辑器初始化
-        window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
-          detail: { role: 'member', userId: data.user?.id }
-        }));
-      }
-      
-    } catch (err) {
-      console.error('❌ 会话设置异常:', err);
-      postToParent('editor:error', { message: '会话同步异常' });
+    if (!session) {
+      console.error('❌ 没有找到 session（用户未登录）');
+      showEmbeddedError('请先在 CRM 系统登录');
+      return;
     }
-  });
+    
+    console.log('✅ 找到共享 session:', session.user?.email);
+    
+    // 发送确认消息给父窗口
+    postToParent('FH_SESSION_ACK', { success: true, email: session.user?.email });
+    
+    // 初始化工作空间
+    let role = 'member';
+    try {
+      const ws = await initWorkspace('Viajes FH');
+      role = ws.role || 'member';
+      storeRole(role);
+      console.log('✅ 工作空间已初始化:', role);
+    } catch (wsErr) {
+      console.warn('⚠️ 工作空间初始化失败:', wsErr.message);
+      // 继续，使用默认角色
+    }
+    
+    // 触发 UI 更新事件 - 这将触发编辑器初始化
+    window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
+      detail: { role, userId: session.user?.id }
+    }));
+    
+  } catch (err) {
+    console.error('❌ 嵌入模式初始化异常:', err);
+    showEmbeddedError('初始化失败: ' + err.message);
+  }
 }
 
 // 导出

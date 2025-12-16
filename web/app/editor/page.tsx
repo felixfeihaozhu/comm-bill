@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, ExternalLink, RefreshCw, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useWorkspace } from '@/components/auth/WorkspaceProvider';
-import { supabase } from '@/lib/supabase';
 
 // Legacy 编辑器 URL（同域名，从 public/legacy 提供）
+// 同域名下 localStorage 自动共享，所以 session 也自动共享，无需 postMessage
 const LEGACY_URL = '/legacy';
 
 // 单据类型标签
@@ -21,14 +21,13 @@ const docTypeLabels: Record<string, string> = {
 function EditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { currentWorkspace, loading: wsLoading } = useWorkspace();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [sessionSent, setSessionSent] = useState(false);
   const [iframeError, setIframeError] = useState<string | null>(null);
-  const [iframeAck, setIframeAck] = useState(false);
+  const [iframeReady, setIframeReady] = useState(false); // iframe 已准备就绪（收到 ACK）
 
   // 从 URL 获取参数
   const docType = searchParams.get('type') || 'bill';
@@ -46,44 +45,13 @@ function EditorContent() {
     return `${LEGACY_URL}/index.html#editor?${params.toString()}`;
   }, [docType, mode, docId]);
 
-  // 发送 session 到 iframe（同域名，使用 window.location.origin）
-  const sendSessionToIframe = useCallback(async () => {
-    if (!iframeRef.current?.contentWindow || !session) return;
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        iframeRef.current.contentWindow.postMessage(
-          {
-            type: 'FH_SUPABASE_SESSION',
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          },
-          window.location.origin
-        );
-        setSessionSent(true);
-        console.log('📤 Session sent to iframe (same origin)');
-      }
-    } catch (err) {
-      console.error('Failed to send session to iframe:', err);
-      setIframeError('无法同步登录状态到编辑器');
-    }
-  }, [session]);
-
-  // iframe 加载完成后发送 session
-  useEffect(() => {
-    if (iframeLoaded && session && !sessionSent) {
-      sendSessionToIframe();
-    }
-  }, [iframeLoaded, session, sessionSent, sendSessionToIframe]);
-
   // 监听来自 iframe 的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // 同域名，验证来源
       if (event.origin !== window.location.origin) return;
 
-      const { type, id, docType: savedDocType } = event.data || {};
+      const { type, id, docType: savedDocType, message } = event.data || {};
 
       switch (type) {
         case 'editor:saved':
@@ -98,14 +66,14 @@ function EditorContent() {
           break;
 
         case 'editor:error':
-          console.error('📥 Editor error:', event.data.message);
-          setIframeError(event.data.message);
+          console.error('📥 Editor error:', message);
+          setIframeError(message);
           break;
 
         case 'editor:ack':
         case 'FH_SESSION_ACK':
-          console.log('📥 Session acknowledged by iframe');
-          setIframeAck(true);
+          console.log('📥 Editor ready (session shared via localStorage)');
+          setIframeReady(true);
           break;
       }
     };
@@ -116,7 +84,7 @@ function EditorContent() {
 
   // iframe 加载处理
   const handleIframeLoad = () => {
-    console.log('🖼️ iframe loaded');
+    console.log('🖼️ iframe loaded (same-origin, session auto-shared)');
     setIframeLoaded(true);
   };
 
@@ -128,8 +96,7 @@ function EditorContent() {
   // 刷新 iframe
   const handleRefresh = () => {
     setIframeLoaded(false);
-    setSessionSent(false);
-    setIframeAck(false);
+    setIframeReady(false);
     setIframeError(null);
     if (iframeRef.current) {
       iframeRef.current.src = buildIframeUrl();
@@ -247,15 +214,18 @@ function EditorContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 会话状态指示 */}
-          {sessionSent && !iframeAck && (
+          {/* 编辑器状态指示 */}
+          {iframeLoaded && !iframeReady && !iframeError && (
             <span className="text-xs text-amber-600 flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
-              等待编辑器响应...
+              初始化编辑器...
             </span>
           )}
-          {iframeAck && (
-            <span className="text-xs text-green-600">✓ 会话已同步</span>
+          {iframeReady && (
+            <span className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              编辑器就绪
+            </span>
           )}
 
           <button
