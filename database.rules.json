@@ -1,0 +1,39 @@
+{
+  "rules": {
+    // 废弃路径 - 完全禁止写入，只允许删除
+    "draft": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "draft_compare": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "draft_quote": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "settings": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "settings_bill": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "settings_quote": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    "database": {
+      ".read": false,
+      ".write": "newData.val() === null"
+    },
+    
+    // 正确的路径 - 允许认证用户读写
+    "modes": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

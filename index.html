@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>符号旅游系统</title>
+  
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/bill-mode.css">
+  <link rel="stylesheet" href="css/quote-mode.css">
+  <link rel="stylesheet" href="css/ticket-mode.css">
+  <link rel="stylesheet" href="css/compare-mode.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="bill-mode">
+
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <img src="logo.png" alt="Logo">
+      </div>
+      <h1 class="login-title">符号旅游</h1>
+      <p class="login-subtitle">登陆</p>
+    </div>
+    <form id="login-form" class="login-form">
+      <div class="form-group-login">
+        <label for="login-password">请输入密码</label>
+        <div class="password-input-wrapper">
+          <input 
+            type="password" 
+            id="login-password" 
+            placeholder="输入您的密码" 
+            autocomplete="current-password"
+            autofocus
+            required
+          />
+          <button type="button" class="toggle-password" id="toggle-password" aria-label="显示密码">
+            <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error" style="display: none;"></div>
+      <button type="submit" id="login-btn" class="login-btn">登录</button>
+    </form>
+  </div>
+</div>
+<div class="app-container" style="display: none;">
+  <div class="pane-preview">
+    <div class="toolbar">
+      <!-- 左侧：用户状态区 -->
+      <div class="toolbar-left">
+        <div class="user-status-wrap">
+          <div id="sync-status" class="sync-indicator">
+            <span class="dot connecting"></span>
+          </div>
+          <div id="current-user-info" class="current-user-info"></div>
+          <button id="logout-btn" class="btn-logout-mini" style="display: none;" title="退出登录">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 中间：模式切换 -->
+      <div class="toolbar-center">
+        <div class="mode-switcher" data-i18n-title="modeSwitchTip" title="切换模式">
+          <button id="btn-mode-bill" class="btn-mode active" onclick="switchMode('bill')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span data-i18n="btnModeBill">账单</span>
+          </button>
+          <button id="btn-mode-quote" class="btn-mode" onclick="switchMode('quote')">
+            <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline><circle cx="10" cy="14" r="2"></circle><path d="M14 14h1"></path><circle cx="10" cy="18" r="2"></circle><path d="M14 18h1"></path></svg>
+            <span data-i18n="btnModeQuote">报价</span>
+          </button>
+          <button id="btn-mode-ticket" class="btn-mode" onclick="switchMode('ticket')">
+            <svg viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"></path><path d="M13 5v2a3 3 0 0 1 0 6v2"></path></svg>
+            <span data-i18n="btnModeTicket">票据</span>
+          </button>
+          <button id="btn-mode-compare" class="btn-mode" onclick="switchMode('compare')">
+            <svg viewBox="0 0 24 24"><line x1="6" y1="19" x2="6" y2="5"></line><line x1="12" y1="19" x2="12" y2="9"></line><line x1="18" y1="19" x2="18" y2="13"></line></svg>
+            <span data-i18n="btnModeCompare">对比</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 右侧：语言切换 + 操作按钮 -->
+      <div class="toolbar-right">
+        <div class="lang-switcher">
+          <button class="btn-lang" onclick="switchLanguage('zh')" title="中文">中</button>
+          <button class="btn-lang" onclick="switchLanguage('es')" title="Español">ES</button>
+          <button class="btn-lang" onclick="switchLanguage('en')" title="EN">EN</button>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-action btn-reset" onclick="resetForm()">
+            <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <span data-i18n="btnReset">重置</span>
+          </button>
+          <button class="btn-action btn-print" onclick="printBill()">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            <span data-i18n="btnPrint">打印</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="preview-scroll-area">
+      <div class="paper" id="invoice-paper">
+        <div class="inv-header">
+          <div style="flex:1">
+            <div class="inv-logo-text"><span id="agency-name" data-i18n="agencyName">符号旅游</span></div>
+            <div class="inv-addr" data-bind="agencyAddress" data-format="multiline"></div>
+            <div class="inv-addr" data-bind="agencyContact" data-format="multiline"></div>
+          </div>
+          <div class="inv-right">
+            <div id="invoice-title" class="inv-title" data-i18n="invoiceTitle">账单 BILL</div>
+            <div class="inv-subtitle"> </div>
+            <div class="meta-horizontal">
+              <div id="meta-invno" class="meta-group" style="display: none;"><div class="meta-label" data-i18n="labelInvNoMeta">编号 Exp #</div><div class="meta-val" data-bind="invNo"></div></div>
+              <div class="meta-group"><div class="meta-label" data-i18n="labelDateMeta">日期 Date</div><div class="meta-val" id="pv-invDate-formatted"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box-container">
+          <div class="inv-box left">
+            <div class="box-label"><span data-i18n="labelBillTo">客户信息</span> <span id="client-sub-label" class="en-sub" data-i18n="subBillTo">Bill To</span></div>
+            <div class="box-content">
+              <div class="trade-name" data-bind="billTradeName"></div>
+              <div id="pv-billContact" class="contact-line"></div>
+              <div id="pv-billCompany" class="legal-name"></div>
+              <div id="pv-billTaxId" class="tax-id-line"></div>
+              <div style="margin-top:4px; white-space: pre-wrap;" data-bind="billAddress" data-format="multiline"></div>
+            </div>
+          </div>
+          <div class="inv-box right">
+            <div class="box-label"><span data-i18n="labelCruiseDetails">航次信息</span> <span class="en-sub" data-i18n="subCruiseDetails">Cruise Details</span></div>
+            <div class="box-content">
+              <div style="margin-bottom:4px"><span class="label-main" data-i18n="labelShipPrint">船名</span><span class="label-sub" data-i18n="subShipPrint">SHIP</span><strong data-bind="ship"></strong></div>
+              <div style="margin-bottom:4px"><span class="label-main" data-i18n="labelRoutePrint">航线</span><span class="label-sub" data-i18n="subRoutePrint">ROUTE</span><span data-bind="route"></span></div>
+              <div style="margin-bottom:4px"><span class="label-main" data-i18n="labelSailingPrint">航期</span><span class="label-sub" data-i18n="subSailingPrint">SAILING</span><span id="pv-sailing-combined"></span></div>
+              </div>
+          </div>
+        </div>
+
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th style="width: 19%"><span data-i18n="thCabinDesc">舱房说明</span></th>
+              <th class="num" style="width: 4%"><span data-i18n="thPax">PAX</span></th>
+              <!-- 报价模式列: PVP → Base → Tasa → HSC → Descuento → Subtotal -->
+              <th class="num quote-only" style="width: 11%"><span data-i18n="thQuotePVP">PVP</span></th>
+              <th class="num quote-only" style="width: 12%"><span data-i18n="thQuoteBase">Base</span></th>
+              <th class="num quote-only" style="width: 11%"><span data-i18n="thQuoteTasa">Tasa</span></th>
+              <th class="num quote-only" style="width: 10%"><span data-i18n="thQuoteHSC">HSC</span></th>
+              <th class="num quote-only quote-descuento-col" style="width: 11%"><span data-i18n="thQuoteDescuento">Descuento</span></th>
+              <th class="num quote-only" style="width: 12%"><span data-i18n="thQuoteSubtotal">Subtotal</span></th>
+              <!-- 账单模式列 -->
+              <th class="num bill-only" style="width: 10%"><span data-i18n="thGrossPrice">直客价</span></th>
+              <th class="num bill-only" style="width: 9%"><span data-i18n="thBaseFare">净船票</span></th>
+              <th class="num bill-only" style="width: 10%"><span data-i18n="thCommission">佣金</span></th>
+              <th class="num bill-only" style="width: 9%"><span data-i18n="thTax">税费</span></th>
+              <th class="num bill-only" style="width: 9%"><span>HSC</span></th>
+              <th class="num bill-only" style="width: 11%"><span data-i18n="thNetPayable">结算价</span></th>
+            </tr>
+          </thead>
+          <tbody id="preview-items-body"></tbody>
+          <!-- 报价模式：表格底部汇总行 -->
+          <tfoot id="quote-table-footer" class="quote-only" style="display: none;">
+            <tr class="quote-summary-row">
+              <td class="summary-label"></td>
+              <td class="num" id="display-quote-total-pax">0</td>
+              <td class="num quote-only" id="display-quote-total-pvp">0.00</td>
+              <td class="num quote-only" id="display-quote-total-base">0.00</td>
+              <td class="num quote-only" id="display-quote-total-tasa">0.00</td>
+              <td class="num quote-only" id="display-quote-total-hsc">0.00</td>
+              <td class="num quote-only quote-descuento-col" id="display-quote-footer-descuento"></td>
+              <td class="num quote-only summary-total" id="display-quote-footer-total">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="inv-footer">
+          <div class="footer-top">
+            <div class="footer-left">
+              <div class="info-block" style="border-left-color: var(--primary);">
+                <div class="info-title"><span data-i18n="labelPaymentDetails">支付方式</span> <span class="en-sub" data-i18n="subPaymentDetails">Payment Details</span></div>
+                <div class="info-text" data-bind="payment" data-format="multiline"></div>
+              </div>
+              <!-- 报价模式：其他付款方式 -->
+              <div class="info-block quote-only" id="other-payment-block" style="border-left-color: #8b5cf6;">
+                <div class="info-title"><span data-i18n="labelOtherPayment">其他付款方式</span> <span class="en-sub" data-i18n="subOtherPayment">Other Payment</span></div>
+                <div class="info-text" id="display-other-payment" data-format="multiline"></div>
+              </div>
+              <!-- 账单模式：备注 -->
+              <div class="info-block bill-only" style="border-left-color: var(--accent);">
+                <div class="info-title"><span data-i18n="labelRemarksDetails">备注条款</span> <span class="en-sub" data-i18n="subRemarksDetails">Remarks</span></div>
+                <div class="info-text" data-bind="remarks" data-format="multiline"></div>
+              </div>
+            </div>
+            <!-- 报价模式：价格包含说明（右侧） -->
+            <div id="quote-price-includes-right" class="footer-right-quote quote-only" style="display: none;">
+              <div class="info-block" style="border-left-color: #10b981;">
+                <div class="info-title"><span data-i18n="labelPriceIncludes">价格包含</span> <span class="en-sub" data-i18n="subPriceIncludes">Price Includes</span></div>
+                <div class="info-text" data-bind="priceIncludes" data-format="multiline"></div>
+              </div>
+            </div>
+            <div class="footer-right">
+            <!-- 账单模式总价区域 -->
+            <div class="total-row bill-only">
+              <div class="total-label"><span data-i18n="labelTotalGross">直客总价</span></div>
+              <div class="total-amount" id="display-gross">0.00</div>
+            </div>
+            <div class="total-row bill-only">
+              <div class="total-label"><span data-i18n="labelTotalTaxHsc">税费服务费总额</span></div>
+              <div class="total-amount" id="display-total-tax-hsc">0.00</div>
+            </div>
+            <div class="total-row bill-only">
+              <div class="total-label"><span data-i18n="labelTotalBase">净船票总价</span></div>
+              <div class="total-amount" id="display-total-base">0.00</div>
+            </div>
+            <div class="total-row bill-only addon-hidden" id="total-row-addon">
+              <div class="total-label"><span data-i18n="labelTotalAddon">附加产品总价</span></div>
+              <div class="total-amount" id="display-total-addon">0.00</div>
+            </div>
+            <div class="total-row comm bill-only">
+              <div class="total-label"><span data-i18n="labelLessComm">减: 佣金</span></div>
+              <div class="total-amount" id="display-commission">- 0.00</div>
+            </div>
+            <div class="net-box bill-only">
+              <div class="net-title"><span data-i18n="labelNetPayableTotal">实付结算价</span></div>
+              <div class="net-val" id="display-net">0.00</div>
+            </div>
+            
+            
+            <!-- 票据模式总价区域 -->
+            <div class="total-box ticket-only" style="display: none; background: #0ea5e9;"><div class="total-title"><span data-i18n="labelTicketTotalPrice">支付金额</span></div><div class="total-value" id="display-ticket-paid">0.00</div></div>
+            <div class="total-box ticket-only" style="display: none; background: #f97316; margin-top: 10px;"><div class="total-title"><span data-i18n="labelTicketPendingPrice">待支付金额</span></div><div class="total-value" id="display-ticket-pending">0.00</div></div>
+            </div>
+          </div>
+          <!-- 报价模式：预定条件和取消政策（全宽显示） -->
+          <div class="footer-bottom quote-only">
+            <div class="info-block-full" style="border-left-color: var(--accent);">
+              <div class="info-title"><span data-i18n="labelBookingTerms">预定条件</span></div>
+              <div class="info-text" data-bind="termsConditions" data-format="multiline"></div>
+            </div>
+            <div class="info-block-full" style="border-left-color: #ef4444;">
+              <div class="info-title"><span data-i18n="labelCancelPolicy">取消政策</span></div>
+              <div class="info-text" data-bind="cancellationPolicy" data-format="multiline"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 票据模式专属预览区 -->
+        <div class="ticket-preview" style="display: none;">
+          <div class="ticket-voucher">
+            <!-- 票据顶部撕开线 -->
+            <div class="ticket-tear-line top"></div>
+            
+            <!-- 客户信息区 -->
+            <div class="ticket-client-bar">
+              <div class="ticket-client-info">
+                <span class="ticket-client-label" data-i18n="labelClient">客户</span>
+                <span class="ticket-client-name" id="ticket-preview-client">-</span>
+              </div>
+            </div>
+            
+            <!-- 产品明细区 -->
+            <div class="ticket-products-section">
+              <div class="ticket-section-title">
+                <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                <span data-i18n="sectionProductDetails">产品明细</span>
+              </div>
+              <div class="ticket-products-list" id="ticket-preview-products">
+                <!-- 产品条目将动态生成 -->
+              </div>
+            </div>
+            
+            <!-- 费用汇总区 -->
+            <div class="ticket-summary-section">
+              <div class="ticket-summary-row">
+                <span class="summary-label" data-i18n="labelTotalAmount">总金额</span>
+                <span class="summary-value" id="ticket-preview-total">0.00 EUR</span>
+              </div>
+              <div class="ticket-summary-row paid">
+                <span class="summary-label" data-i18n="labelPaidAmount">已付金额</span>
+                <span class="summary-value" id="ticket-preview-paid">0.00 EUR</span>
+              </div>
+              <div class="ticket-summary-row pending">
+                <span class="summary-label" data-i18n="labelPendingAmount">待付金额</span>
+                <span class="summary-value" id="ticket-preview-pending">0.00 EUR</span>
+              </div>
+            </div>
+            
+            <!-- 支付状态徽章 -->
+            <div class="ticket-status-badge" id="ticket-status-badge">
+              <div class="status-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+              <div class="status-text" id="ticket-status-text" data-i18n="statusPending">待支付</div>
+            </div>
+            
+            <!-- 支付详情区 -->
+            <div class="ticket-payment-details">
+              <div class="ticket-section-title small">
+                <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                <span data-i18n="sectionPaymentInfo">支付信息</span>
+              </div>
+              <div class="ticket-payment-info">
+                <div class="payment-info-row">
+                  <span class="payment-info-label" data-i18n="labelPaymentDate">支付日期</span>
+                  <span class="payment-info-value" id="ticket-preview-payment-date">-</span>
+                </div>
+                <div class="payment-info-row">
+                  <span class="payment-info-label" data-i18n="labelPaymentMethod">支付方式</span>
+                  <span class="payment-info-value" id="ticket-preview-payment-method">-</span>
+                </div>
+                <div class="payment-info-row note" id="ticket-payment-note-row" style="display: none;">
+                  <span class="payment-info-label" data-i18n="labelNote">备注</span>
+                  <span class="payment-info-value" id="ticket-preview-payment-note">-</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 票据底部撕开线 -->
+            <div class="ticket-tear-line bottom"></div>
+          </div>
+        </div>
+        
+        <div class="compare-preview" style="display: none;">
+          <div class="compare-container">
+            <div class="compare-preview-grid">
+            <div class="compare-preview-card">
+              <div class="compare-preview-header west">西区 West Region</div>
+              <div class="compare-preview-body">
+                <div class="calc-row">
+                  <span class="calc-label">直客价 Gross Price</span>
+                  <span class="calc-value" id="preview-west-gross">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 港口税 Tax</span>
+                  <span class="calc-value" id="preview-west-tax">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 服务费 HSC</span>
+                  <span class="calc-value" id="preview-west-hsc">0.00 EUR</span>
+                </div>
+                <div class="calc-row divider">
+                  <span class="calc-label">船票价 Base Fare</span>
+                  <span class="calc-value bold" id="preview-west-base">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-club-row" style="display: none;">
+                  <span class="calc-label">- Club (<span id="preview-west-club-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-west-club-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-afterclub-row" style="display: none;">
+                  <span class="calc-label">Club折后价</span>
+                  <span class="calc-value bold" id="preview-west-afterclub">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-selection-row" style="display: none;">
+                  <span class="calc-label">- Selection (<span id="preview-west-selection-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-west-selection-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-afterselection-row" style="display: none;">
+                  <span class="calc-label">Selection折后价</span>
+                  <span class="calc-value bold" id="preview-west-afterselection">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-discount-row" style="display: none;">
+                  <span class="calc-label">- 折扣 Discount (<span id="preview-west-discount-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-west-discount-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-west-discounted-row" style="display: none;">
+                  <span class="calc-label">折后价 After Discount</span>
+                  <span class="calc-value bold" id="preview-west-discounted">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 佣金 Commission (<span id="preview-west-comm-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-west-comm">0.00 EUR</span>
+                </div>
+                <div class="calc-row divider">
+                  <span class="calc-label">净后价 Net After Comm</span>
+                  <span class="calc-value bold" id="preview-west-net">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">+ 港口税 Tax</span>
+                  <span class="calc-value" id="preview-west-tax2">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">+ 服务费 HSC</span>
+                  <span class="calc-value" id="preview-west-hsc2">0.00 EUR</span>
+                </div>
+                <div class="calc-row final">
+                  <span class="calc-label">成本价 Final Cost</span>
+                  <span class="calc-value highlight" id="preview-west-final">0.00 EUR</span>
+                </div>
+              </div>
+            </div>
+            <div class="compare-preview-card">
+              <div class="compare-preview-header german">德区 German Region</div>
+              <div class="compare-preview-body">
+                <div class="calc-row">
+                  <span class="calc-label">直客价 Gross Price</span>
+                  <span class="calc-value" id="preview-german-gross">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 港口税 Tax</span>
+                  <span class="calc-value" id="preview-german-tax">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 服务费 HSC</span>
+                  <span class="calc-value" id="preview-german-hsc">0.00 EUR</span>
+                </div>
+                <div class="calc-row divider">
+                  <span class="calc-label">船票价 Base Fare</span>
+                  <span class="calc-value bold" id="preview-german-base">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-club-row" style="display: none;">
+                  <span class="calc-label">- Club (<span id="preview-german-club-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-german-club-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-afterclub-row" style="display: none;">
+                  <span class="calc-label">Club折后价</span>
+                  <span class="calc-value bold" id="preview-german-afterclub">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-selection-row" style="display: none;">
+                  <span class="calc-label">- Selection (<span id="preview-german-selection-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-german-selection-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-afterselection-row" style="display: none;">
+                  <span class="calc-label">Selection折后价</span>
+                  <span class="calc-value bold" id="preview-german-afterselection">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-discount-row" style="display: none;">
+                  <span class="calc-label">- 折扣 Discount (<span id="preview-german-discount-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-german-discount-amt">0.00 EUR</span>
+                </div>
+                <div class="calc-row" id="preview-german-discounted-row" style="display: none;">
+                  <span class="calc-label">折后价 After Discount</span>
+                  <span class="calc-value bold" id="preview-german-discounted">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">- 佣金 Commission (<span id="preview-german-comm-rate">0</span>%)</span>
+                  <span class="calc-value" id="preview-german-comm">0.00 EUR</span>
+                </div>
+                <div class="calc-row divider">
+                  <span class="calc-label">净后价 Net After Comm</span>
+                  <span class="calc-value bold" id="preview-german-net">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">+ 港口税 Tax</span>
+                  <span class="calc-value" id="preview-german-tax2">0.00 EUR</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">+ 服务费 HSC</span>
+                  <span class="calc-value" id="preview-german-hsc2">0.00 EUR</span>
+                </div>
+                <div class="calc-row final">
+                  <span class="calc-label">成本价 Final Cost</span>
+                  <span class="calc-value highlight" id="preview-german-final">0.00 EUR</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="compare-result">
+            <div class="compare-result-item">
+              <div class="result-label">价差 Price Difference</div>
+              <div class="result-value" id="preview-diff">0.00 EUR</div>
+            </div>
+            <div class="compare-result-item best">
+              <div class="result-label">最低区域 Lowest Region</div>
+              <div class="result-value" id="preview-best">-</div>
+            </div>
+          </div>
+          <div class="profit-comparison">
+            <div class="profit-comparison-grid">
+              <div class="profit-card west">
+                <div class="profit-card-header">西区利润 West Profit</div>
+                <div class="profit-card-body">
+                  <div class="profit-row">
+                    <span class="profit-label">实际售价 Actual Price</span>
+                    <span class="profit-value" id="profit-west-actual">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-west-tax-row" style="display: none;">
+                    <span class="profit-label">- 税费 Tax</span>
+                    <span class="profit-value" id="profit-west-tax">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-west-hsc-row" style="display: none;">
+                    <span class="profit-label">- 服务费 HSC</span>
+                    <span class="profit-value" id="profit-west-hsc">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-west-base-row" style="display: none;">
+                    <span class="profit-label">= 同行船票价 Peer Base</span>
+                    <span class="profit-value" id="profit-west-base">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-west-peercomm-row" style="display: none;">
+                    <span class="profit-label">- 返佣 Commission</span>
+                    <span class="profit-value" id="profit-west-peercomm">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-west-netticket-row" style="display: none;">
+                    <span class="profit-label">= 同行净船票价 Net Ticket</span>
+                    <span class="profit-value" id="profit-west-netticket">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-west-addtax-row" style="display: none;">
+                    <span class="profit-label">+ 税费 Tax</span>
+                    <span class="profit-value" id="profit-west-addtax">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-west-addhsc-row" style="display: none;">
+                    <span class="profit-label">+ 服务费 HSC</span>
+                    <span class="profit-value" id="profit-west-addhsc">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-west-peerpay-row" style="display: none;">
+                    <span class="profit-label">= 同行支付价 Peer Pay</span>
+                    <span class="profit-value" id="profit-west-peerpay">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row">
+                    <span class="profit-label">- 成本价 Cost</span>
+                    <span class="profit-value" id="profit-west-cost">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row total">
+                    <span class="profit-label">= 利润 Profit</span>
+                    <span class="profit-value highlight" id="profit-west-total">0.00 EUR</span>
+                  </div>
+                </div>
+              </div>
+              <div class="profit-card german">
+                <div class="profit-card-header">德区利润 German Profit</div>
+                <div class="profit-card-body">
+                  <div class="profit-row">
+                    <span class="profit-label">实际售价 Actual Price</span>
+                    <span class="profit-value" id="profit-german-actual">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-german-tax-row" style="display: none;">
+                    <span class="profit-label">- 税费 Tax</span>
+                    <span class="profit-value" id="profit-german-tax">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-german-hsc-row" style="display: none;">
+                    <span class="profit-label">- 服务费 HSC</span>
+                    <span class="profit-value" id="profit-german-hsc">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-german-base-row" style="display: none;">
+                    <span class="profit-label">= 同行船票价 Peer Base</span>
+                    <span class="profit-value" id="profit-german-base">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-german-peercomm-row" style="display: none;">
+                    <span class="profit-label">- 返佣 Commission</span>
+                    <span class="profit-value" id="profit-german-peercomm">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-german-netticket-row" style="display: none;">
+                    <span class="profit-label">= 同行净船票价 Net Ticket</span>
+                    <span class="profit-value" id="profit-german-netticket">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-german-addtax-row" style="display: none;">
+                    <span class="profit-label">+ 税费 Tax</span>
+                    <span class="profit-value" id="profit-german-addtax">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row" id="profit-german-addhsc-row" style="display: none;">
+                    <span class="profit-label">+ 服务费 HSC</span>
+                    <span class="profit-value" id="profit-german-addhsc">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row subtotal" id="profit-german-peerpay-row" style="display: none;">
+                    <span class="profit-label">= 同行支付价 Peer Pay</span>
+                    <span class="profit-value" id="profit-german-peerpay">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row">
+                    <span class="profit-label">- 成本价 Cost</span>
+                    <span class="profit-value" id="profit-german-cost">0.00 EUR</span>
+                  </div>
+                  <div class="profit-row total">
+                    <span class="profit-label">= 利润 Profit</span>
+                    <span class="profit-value highlight" id="profit-german-total">0.00 EUR</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="profit-best">
+              <div class="profit-best-label">最高利润区域 Best Profit Region</div>
+              <div class="profit-best-value" id="profit-best-region">-</div>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div style="margin-top:auto; padding-top:20px; border-top:1px solid #eee; text-align:center; font-size:10px; color:#9ca3af;">
+          FH GLOBAL S.L. with NIF: B72398340. Paseo Quince De Mayo 3, 28019 Madrid.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane-form">
+    <div class="form-scroll-area">
+      <div class="form-group compare-inputs" style="display:none">
+        <div class="form-title">
+          <span>对比录入</span>
+          <button class="btn btn-sm btn-outline" onclick="clearCompareInputs()">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            一键清除
+          </button>
+        </div>
+        <div class="compare-grid">
+          <div class="compare-box">
+            <div class="compare-box-header">西区 West Region</div>
+            <div class="compare-box-content">
+              <div class="compare-field">
+                <label>直客价</label>
+                <div class="input-box"><input type="number" id="compareWest" placeholder="直客价 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>港口税</label>
+                <div class="input-box"><input type="number" id="compareWestTax" placeholder="港口税 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>服务费</label>
+                <div class="input-box"><input type="number" id="compareWestHsc" placeholder="服务费 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>佣金%</label>
+                <div class="input-box"><input type="number" id="compareWestRate" placeholder="佣金%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>Club%</label>
+                <div class="input-box"><input type="number" id="compareWestClub" placeholder="Club%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>Selection%</label>
+                <div class="input-box"><input type="number" id="compareWestSelection" placeholder="Selection%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>折扣%</label>
+                <div class="input-box"><input type="number" id="compareWestDiscount" placeholder="折扣%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="compare-box">
+            <div class="compare-box-header">德区 German Region</div>
+            <div class="compare-box-content">
+              <div class="compare-field">
+                <label>直客价</label>
+                <div class="input-box"><input type="number" id="compareGerman" placeholder="直客价 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>港口税</label>
+                <div class="input-box"><input type="number" id="compareGermanTax" placeholder="港口税 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>服务费</label>
+                <div class="input-box"><input type="number" id="compareGermanHsc" placeholder="服务费 (EUR)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field">
+                <label>佣金%</label>
+                <div class="input-box"><input type="number" id="compareGermanRate" placeholder="佣金%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>Club%</label>
+                <div class="input-box"><input type="number" id="compareGermanClub" placeholder="Club%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>Selection%</label>
+                <div class="input-box"><input type="number" id="compareGermanSelection" placeholder="Selection%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+              <div class="compare-field compare-optional">
+                <label>折扣%</label>
+                <div class="input-box"><input type="number" id="compareGermanDiscount" placeholder="折扣%" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="actual-price-box">
+          <div class="actual-price-header">实际售价与同行返佣 Actual Price & Peer Commission</div>
+          <div class="actual-price-content">
+            <div class="actual-price-row">
+              <div class="actual-price-col">
+                <label>实际售价 (EUR) Actual Price</label>
+                <div class="input-box">
+                  <input type="number" id="compareActualPrice" placeholder="实际售价" oninput="checkClear(this)">
+                  <span class="clear-x" onclick="clearField(this)">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="actual-price-col">
+                <label>同行返佣 % Peer Comm %</label>
+                <div class="input-box">
+                  <input type="number" id="peerCommissionRate" placeholder="0" min="0" max="100" step="0.1" oninput="checkClear(this)">
+                  <span class="clear-x" onclick="clearField(this)">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="actual-price-col">
+                <label>返佣金额 (EUR) Comm Amount</label>
+                <div class="input-box">
+                  <input type="number" id="peerCommissionAmount" placeholder="0" min="0" step="0.01" oninput="checkClear(this)">
+                  <span class="clear-x" onclick="clearField(this)">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-title" data-i18n="sectionBasicInfo">基础信息</div>
+        <div class="row"><div class="col"><label data-i18n="labelInvNo">编号</label><div class="input-box"><input type="text" id="invNo" data-i18n="placeholderInvNo" placeholder="25 0001" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div><div class="col"><label data-i18n="labelDate">日期</label><div class="input-box"><input type="date" id="invDate" oninput="checkClear(this)"></div></div></div>
+      </div>
+      <div style="display:none">
+        <input type="text" id="agencyName" value="符号旅游 FH GLOBAL, S.L."><textarea id="agencyAddress">PASEO QUINCE DE MAYO 3, 28019 MADRID</textarea><textarea id="agencyContact">Tel: +34 919471812 | fhglobal@fhglobal.es</textarea><input type="text" id="currency" value="EUR">
+      </div>
+
+      <div class="form-group">
+        <div class="form-title" data-i18n="sectionClientInfo">客户信息</div>
+        <div class="input-group" style="margin-bottom: 10px;">
+           <select id="clientSelect" onchange="selectClient()"><option value="" data-i18n="selectClient">-- 选择常用客户 --</option></select>
+           <div class="group-btn" onclick="toggleClientDetails()" data-i18n-title="tooltipEdit" title="编辑/新增"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+           <div class="group-btn" onclick="deleteClient()" data-i18n-title="tooltipDelete" title="删除客户" style="border-left: 1px solid #fee2e2; background-color: #fef2f2; color: #dc2626;"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></div>
+        </div>
+        
+        <div id="client-details-wrapper">
+          <!-- 基本信息：直客/企业客户通用 -->
+          <div class="row">
+            <div class="col"><label data-i18n="labelClientName">客户名称</label><div class="input-box"><input type="text" id="billTradeName" data-i18n-placeholder="placeholderClientName" placeholder="姓名 / 企业名" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
+          </div>
+          <div class="row">
+            <div class="col"><label data-i18n="labelContact">联系方式</label><div class="input-box"><input type="text" id="billContact" data-i18n-placeholder="placeholderContact" placeholder="电话 / 邮箱" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div>
+          </div>
+          
+          <!-- 企业开票信息：可折叠区域 -->
+          <div class="invoice-info-section">
+            <div class="invoice-info-toggle" onclick="toggleInvoiceInfo()">
+              <span class="toggle-icon" id="invoice-toggle-icon">▶</span>
+              <span data-i18n="labelInvoiceInfo">开票信息</span>
+              <span class="toggle-hint" data-i18n="hintInvoiceInfo">（企业客户可选填）</span>
+            </div>
+            <div id="invoice-info-wrapper" class="invoice-info-content" style="display: none;">
+              <div class="row"><div class="col"><label data-i18n="labelLegalName">公司注册名称</label><div class="input-box"><input type="text" id="billCompany" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+              <div class="row"><div class="col"><label data-i18n="labelTaxId">税号</label><div class="input-box"><input type="text" id="billTaxId" data-i18n-placeholder="placeholderTaxId" placeholder="e.g. ES12345678" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+              <div class="row"><div class="col"><label data-i18n="labelAddress">地址</label><div class="input-box"><textarea id="billAddress" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+            </div>
+          </div>
+          
+          <!-- 账单模式专用：佣金设置 -->
+          <div id="commission-row" class="bill-only" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb;">
+            <div style="flex: 1;"><label data-i18n="labelCommRate">佣金%</label><div class="input-box"><input type="number" id="billDefaultRate" value="0"></div></div>
+            <div style="flex: 1;"><label data-i18n="labelAddonRate">附加佣金%</label><div class="input-box"><input type="number" id="billAddonRate" value="0"></div></div>
+          </div>
+          
+          <div style="text-align:right; margin-top:10px;">
+             <button class="btn btn-sm btn-outline" onclick="toggleClientDetails()"><span data-i18n="btnHide">收起</span></button>
+             <button class="btn btn-sm btn-save" onclick="saveClient()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="btnSave">保存</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 票据模式：产品明细 -->
+      <div class="form-group ticket-inputs" style="display:none">
+        <div class="form-title">
+          <span data-i18n="sectionTicketProducts">产品明细</span>
+          <div>
+            <button class="btn btn-primary btn-sm" onclick="addTicketProduct()">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span data-i18n="btnAddProduct">添加产品</span>
+            </button>
+          </div>
+        </div>
+        <div id="ticket-products-container"></div>
+      </div>
+      
+      <!-- 票据模式：支付信息 -->
+      <div class="form-group ticket-inputs ticket-payment-section" style="display:none">
+        <div class="form-title" style="color: #059669;">
+          <span data-i18n="sectionTicketPayment">支付信息</span>
+        </div>
+        <div class="ticket-payment-grid">
+          <div class="ticket-payment-item">
+            <label data-i18n="labelTicketPaidAmount">已付金额</label>
+            <div class="input-box">
+              <input type="number" id="ticketPaidAmount" placeholder="0.00" oninput="updateTicketTotals(); checkClear(this)">
+              <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+            </div>
+          </div>
+          <div class="ticket-payment-item">
+            <label data-i18n="labelTicketPaymentDate">支付日期</label>
+            <div class="merged-group">
+              <div class="input-box">
+                <input type="text" id="ticketPaymentDate" placeholder="DD/MM/YYYY" onblur="smartDateInput(this)" oninput="checkClear(this)">
+                <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+              </div>
+              <div class="merged-trigger" onclick="openPicker('pickerTicketPayment')">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <input type="date" id="pickerTicketPayment" class="hidden-date-overlay" onchange="pickDate(this, 'ticketPaymentDate')">
+              </div>
+            </div>
+          </div>
+          <div class="ticket-payment-item">
+            <label data-i18n="labelTicketPaymentMethod">支付方式</label>
+            <div class="input-box">
+              <input type="text" id="ticketPaymentMethod" list="paymentMethodList" placeholder="现金/转账/信用卡..." oninput="checkClear(this)">
+              <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+            </div>
+            <datalist id="paymentMethodList">
+              <option value="现金 Efectivo">
+              <option value="银行转账 Transferencia">
+              <option value="信用卡 Tarjeta">
+              <option value="Bizum">
+              <option value="PayPal">
+            </datalist>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 12px;">
+          <div class="col">
+            <label data-i18n="labelTicketPaymentNote">支付备注</label>
+            <div class="input-box">
+              <textarea id="ticketPaymentNote" rows="2" placeholder="支付相关备注..." oninput="checkClear(this)"></textarea>
+              <span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-title" data-i18n="sectionCruiseInfo">航次信息</div>
+        <div class="row">
+            <div class="col"><label data-i18n="labelShip">船名</label><div class="merged-group"><div class="input-box"><input type="text" id="ship" list="shipList" placeholder="" onblur="autoSaveShip(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editShip()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="shipList"></datalist></div><span id="msg-ship" class="status-msg"></span></div>
+            <div class="col"><label data-i18n="labelRoute">航线</label><div class="merged-group"><div class="input-box"><input type="text" id="route" list="routeList" placeholder="" onblur="autoSaveRoute(this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="editRoute()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><datalist id="routeList"></datalist></div><span id="msg-route" class="status-msg"></span></div>
+        </div>
+        <div class="row">
+            <div class="col"><label data-i18n="labelSailingStart">出发</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingStart" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerStart')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerStart" class="hidden-date-overlay" onchange="pickDate(this, 'sailingStart')"></div></div></div>
+            <div class="col"><label data-i18n="labelSailingEnd">结束</label><div class="merged-group"><div class="input-box"><input type="text" id="sailingEnd" onblur="smartDateInput(this)" onkeypress="handleDateKey(event, this)" oninput="checkClear(this)"><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div><div class="merged-trigger" onclick="openPicker('pickerEnd')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><input type="date" id="pickerEnd" class="hidden-date-overlay" onchange="pickDate(this, 'sailingEnd')"></div></div></div>
+            </div>
+      </div>
+
+      <div class="form-group" style="border-color:#fca5a5; background:#fff1f2;">
+        <div class="form-title" style="color:#b91c1c;"><span data-i18n="sectionItems">费用明细</span><div><button class="btn btn-primary btn-sm" onclick="addItem()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span data-i18n="btnAddCabin">添加舱房</span></button></div></div>
+        <datalist id="dl-types"></datalist><datalist id="dl-exps"></datalist><datalist id="dl-prices"></datalist><datalist id="dl-addons"></datalist>
+        <div id="items-container"></div>
+      </div>
+
+      <!-- 付款方式（票据模式下隐藏） -->
+      <div class="form-group hide-in-ticket">
+        <div class="form-title">
+          <span data-i18n="sectionPaymentMethods">付款方式</span>
+          <button class="btn btn-sm btn-toggle" onclick="togglePayment()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="payment-wrapper">
+          <div class="row"><div class="col"><label data-i18n="labelPayment">支付信息</label><div class="input-box"><textarea id="payment" rows="6" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      
+      <!-- 价格包含说明（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelPriceIncludes">价格包含</span>
+          <button class="btn btn-sm btn-toggle" onclick="togglePriceIncludes()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="price-includes-wrapper" style="display: none;">
+          <div class="row"><div class="col"><div class="input-box"><textarea id="priceIncludes" rows="3" data-i18n-placeholder="placeholderPriceIncludes" placeholder="输入价格包含说明..." oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      
+      <!-- 总价显示设置（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelQuoteTotalsSettings">总价显示</span>
+        </div>
+        <div class="quote-toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="showQuoteTotals" checked onchange="toggleQuoteTotals()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label" data-i18n="labelShowTotals">显示总价区域</span>
+        </div>
+      </div>
+      
+      <!-- 预定条件（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelTermsConditions">预定条件</span>
+          <button class="btn btn-sm btn-toggle" onclick="toggleTerms()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="terms-wrapper" style="display: none;">
+          <div class="row"><div class="col"><div class="input-box"><textarea id="termsConditions" rows="4" placeholder="输入预定条件..." oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      
+      <!-- 取消政策（报价模式专用） -->
+      <div class="form-group quote-only">
+        <div class="form-title">
+          <span data-i18n="labelCancellationPolicy">取消政策</span>
+          <button class="btn btn-sm btn-toggle" onclick="toggleCancellation()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="cancellation-wrapper" style="display: none;">
+          <div class="row"><div class="col"><div class="input-box"><textarea id="cancellationPolicy" rows="4" placeholder="输入取消政策..." oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      
+      <!-- 备注（账单模式专用） -->
+      <div class="form-group bill-only">
+        <div class="form-title">
+          <span data-i18n="labelRemarks">备注</span>
+          <button class="btn btn-sm btn-toggle" onclick="toggleRemarks()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span data-i18n="btnShowEdit">查看/编辑</span></button>
+        </div>
+        <div id="remarks-wrapper" style="display: none;">
+          <div class="row"><div class="col"><div class="input-box"><textarea id="remarks" rows="4" oninput="checkClear(this)"></textarea><span class="clear-x" onclick="clearField(this)"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div></div></div>
+        </div>
+      </div>
+      <div style="height:30px"></div>
+    </div>
+  </div>
+</div>
+<script src="js/core/security.js"></script>
+<script type="module">import{initLoginUI as i}from'./js/core/auth.js';document.addEventListener('DOMContentLoaded',i);</script>
+<script type="module" src="js/core/utils.js"></script>
+<script type="module" src="js/core/firebase-config.js"></script>
+<script type="module" src="js/core/i18n.js"></script>
+<script type="module" src="js/modes/bill-mode.js"></script>
+<script type="module" src="js/modes/quote-mode.js"></script>
+<script type="module" src="js/modes/ticket-mode.js"></script>
+<script type="module" src="js/modes/compare-mode.js"></script>
+<script type="module" src="js/main.js?v=18"></script>
+</body>
+</html>
