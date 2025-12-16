@@ -1,0 +1,860 @@
+/**
+ * 对比模式专属样式
+ * 价格对比分析 - 西区/德区价格对比、会员折扣、利润计算
+ */
+
+/* ========================================
+   基础样式（表单区域使用，无 .compare-mode 前缀）
+   ======================================== */
+
+/* 对比输入区上下布局 */
+.compare-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.compare-box {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(14, 165, 233, 0.1);
+}
+
+.compare-box:first-child {
+  border-color: #fecaca;
+}
+
+.compare-box:last-child {
+  border-color: #fde68a;
+}
+
+.compare-box-header {
+  background: #0ea5e9;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.compare-box:first-child .compare-box-header {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-bottom: 2px solid #fecaca;
+}
+
+.compare-box:last-child .compare-box-header {
+  background: #fffbeb;
+  color: #b45309;
+  border-bottom: 2px solid #fde68a;
+}
+
+.compare-box-content {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.compare-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.compare-field.compare-optional {
+  grid-column: auto;
+}
+
+.compare-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.compare-field .input-box {
+  margin-bottom: 0;
+}
+
+.compare-field .input-box input {
+  font-size: 13px;
+  padding: 6px 8px;
+  height: 32px;
+  width: 100%;
+}
+
+/* 实际售价输入区 */
+.actual-price-box {
+  background: #ffffff;
+  border: 2px solid #bfdbfe;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(191, 219, 254, 0.1);
+  margin-top: 12px;
+}
+
+.actual-price-header {
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid #dbeafe;
+}
+
+.actual-price-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actual-price-content label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.actual-price-content .input-box {
+  margin-bottom: 0;
+}
+
+.actual-price-content .input-box input {
+  font-size: 14px;
+  padding: 8px 10px;
+  height: 36px;
+  width: 100%;
+  font-weight: 600;
+}
+
+/* ========================================
+   预览区样式（用于对比计算结果显示）
+   ======================================== */
+
+.compare-preview-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 16px 0 12px 0;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+  font-family: Arial, sans-serif;
+}
+
+.compare-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.compare-preview-card {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.compare-preview-header {
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: left;
+  font-family: Arial, sans-serif;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.compare-preview-header.west {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-bottom-color: #fecaca;
+}
+
+.compare-preview-header.german {
+  background: #fffbeb;
+  color: #b45309;
+  border-bottom-color: #fde68a;
+}
+
+.compare-preview-body {
+  padding: 12px;
+}
+
+/* 计算行样式 */
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #6b7280;
+  border-bottom: 1px solid #f3f4f6;
+  font-family: Arial, sans-serif;
+}
+
+.calc-row:last-child {
+  border-bottom: none;
+}
+
+.calc-row.divider {
+  background: #ffffff;
+  border-top: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+  margin: 6px 0;
+  font-weight: 600;
+  color: #374151;
+  padding: 7px 8px;
+}
+
+.calc-row.final {
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 8px;
+  border-radius: 3px;
+  padding: 10px 12px;
+  border-bottom: none;
+  background: #94a3b8;
+}
+
+.calc-row.profit {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  margin-top: 6px;
+  border-radius: 3px;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.calc-label {
+  font-weight: 500;
+}
+
+.calc-value {
+  font-family: Arial, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.calc-value.bold {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.calc-value.highlight {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.calc-value.profit-value {
+  font-weight: 700;
+  color: #15803d;
+  font-size: 13px;
+}
+
+/* 利润对比区 */
+.profit-comparison {
+  margin-top: 20px;
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.profit-comparison-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin-bottom: 12px;
+  font-family: Arial, sans-serif;
+}
+
+.profit-subtitle {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #0369a1;
+  margin-top: 2px;
+}
+
+.profit-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profit-card {
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.profit-card-header {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.profit-card.west .profit-card-header {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-bottom: 1px solid #fecaca;
+}
+
+.profit-card.german .profit-card-header {
+  background: #fffbeb;
+  color: #b45309;
+  border-bottom: 1px solid #fde68a;
+}
+
+.profit-card-body {
+  padding: 10px;
+}
+
+.profit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+}
+
+.profit-row.total {
+  background: #e0f2fe;
+  margin-top: 6px;
+  border-radius: 3px;
+  padding: 8px;
+  font-weight: 700;
+  color: #075985;
+}
+
+.profit-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.profit-row.total .profit-label {
+  color: #075985;
+}
+
+.profit-value {
+  font-family: Arial, sans-serif;
+  font-weight: 600;
+  color: #374151;
+}
+
+.profit-value.highlight {
+  font-weight: 700;
+  font-size: 14px;
+  color: #075985;
+}
+
+.profit-best {
+  text-align: center;
+  background: #059669;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+.profit-best-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.profit-best-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+}
+
+/* 对比结果区 */
+.compare-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.compare-result-item {
+  text-align: center;
+  padding: 12px;
+  background: white;
+  border-radius: 3px;
+  border: 1px solid #e5e7eb;
+  font-family: Arial, sans-serif;
+}
+
+.compare-result-item.best {
+  background: #059669;
+  color: white;
+  border-color: #047857;
+}
+
+.result-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+.result-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+}
+
+.compare-result-item.best .result-label,
+.compare-result-item.best .result-value {
+  color: white;
+  opacity: 1;
+}
+
+/* ========================================
+   对比模式专属样式（带 .compare-mode 前缀）
+   ======================================== */
+
+/* 对比模式显示控制 */
+.compare-mode .compare-only {
+  display: flex !important;
+}
+
+/* 对比模式下隐藏账单预览的所有内容 */
+.compare-mode .inv-header,
+.compare-mode .box-container,
+.compare-mode .inv-table,
+.compare-mode .inv-footer {
+  display: none !important;
+}
+
+/* 隐藏页脚公司信息 */
+.compare-mode #invoice-paper > div:last-child:not(.compare-preview) {
+  display: none !important;
+}
+
+/* 隐藏账单专属列 */
+.compare-mode .bill-only {
+  display: none !important;
+}
+
+/* 隐藏实付结算价卡片 */
+.compare-mode .net-box {
+  display: none !important;
+}
+
+/* 隐藏账单总价列表 */
+.compare-mode .total-row {
+  display: none !important;
+}
+
+/* 隐藏其他模式元素 */
+.compare-mode .quote-only,
+.compare-mode .ticket-only {
+  display: none !important;
+}
+
+/* 对比模式表单：只显示 compare-inputs */
+.compare-mode .pane-form {
+  display: flex !important;
+}
+
+.compare-mode .pane-form .form-group:not(.compare-inputs) {
+  display: none !important;
+}
+
+.compare-mode .pane-form .compare-inputs {
+  display: block !important;
+}
+
+/* 对比模式上下布局 */
+.compare-mode .compare-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* 对比输入框容器 */
+.compare-mode .compare-box {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 西区边框颜色 */
+.compare-mode .compare-box.west {
+  border-color: #b91c1c;
+}
+
+/* 德区边框颜色 */
+.compare-mode .compare-box.german {
+  border-color: #b45309;
+}
+
+.compare-mode .compare-box-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid;
+}
+
+/* 西区标题颜色 */
+.compare-mode .compare-box.west .compare-box-title {
+  color: #b91c1c;
+  border-bottom-color: #b91c1c;
+}
+
+/* 德区标题颜色 */
+.compare-mode .compare-box.german .compare-box-title {
+  color: #b45309;
+  border-bottom-color: #b45309;
+}
+
+.compare-mode .compare-box-content {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+/* 建议售价输入区 */
+.compare-mode .compare-actual-price {
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.compare-mode .compare-actual-price-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #0369a1;
+  margin-bottom: 8px;
+}
+
+/* 实际售价与同行返佣输入区 */
+.compare-mode .actual-price-box {
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.compare-mode .actual-price-header {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0369a1;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #bae6fd;
+}
+
+.compare-mode .actual-price-content {
+  margin-top: 12px;
+}
+
+.compare-mode .actual-price-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.compare-mode .actual-price-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.compare-mode .actual-price-col label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #075985;
+  margin-bottom: 6px;
+}
+
+/* 对比预览区 - 直接在paper上显示，无额外边框 */
+.compare-mode .compare-preview {
+  display: block !important;
+}
+
+/* 对比模式下的paper保持白纸样式，与其他模式一致 */
+.compare-mode #invoice-paper {
+  padding: 40px;
+  background: white;
+}
+
+/* 对比容器 - 直接显示内容 */
+.compare-mode .compare-container {
+  width: 100%;
+}
+
+/* 西区和德区成本计算网格 */
+.compare-mode .compare-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.compare-mode .compare-preview-card {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.compare-mode .compare-preview-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e5e7eb;
+  text-align: center;
+}
+
+/* 西区预览样式 */
+.compare-mode .compare-region.west {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+}
+
+.compare-mode .compare-region.west .region-title {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* 德区预览样式 */
+.compare-mode .compare-region.german {
+  background: #fefce8;
+  border: 2px solid #fde68a;
+}
+
+.compare-mode .compare-region.german .region-title {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+/* 成本价背景 */
+.compare-mode .calc-row.final {
+  background: #94a3b8 !important;
+  color: white;
+  font-weight: 700;
+}
+
+/* 利润对比区 - 移除边框 */
+.compare-mode .profit-comparison {
+  margin-top: 20px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.compare-mode .profit-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+/* 价差对比结果 - 移除背景边框 */
+.compare-mode .compare-result {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.compare-mode .profit-best {
+  margin-top: 12px;
+  padding: 12px;
+  background: #dbeafe;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+/* 对比结果框 */
+.compare-mode .comparison-result {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 4px solid #3b82f6;
+}
+
+.compare-mode .comparison-result-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+/* 利润卡片样式 */
+.compare-mode .profit-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.compare-mode .profit-card {
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.compare-mode .profit-card-header {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+}
+
+.compare-mode .profit-card.west .profit-card-header {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.compare-mode .profit-card.german .profit-card-header {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.compare-mode .profit-card-body {
+  padding: 12px;
+}
+
+.compare-mode .profit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.compare-mode .profit-row:last-child {
+  border-bottom: none;
+}
+
+/* 中间小计行 */
+.compare-mode .profit-row.subtotal {
+  background: #e0f2fe;
+  font-weight: 600;
+  color: #075985;
+  margin: 4px 0;
+  border-radius: 3px;
+}
+
+/* 返佣行 */
+.compare-mode .profit-row.peer {
+  background: #fef3c7;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* 加项行（加回税费和服务费） */
+.compare-mode .profit-row:has(.profit-label:first-child:is([id*="addtax"], [id*="addhsc"])) {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.compare-mode #profit-west-addtax-row,
+.compare-mode #profit-west-addhsc-row,
+.compare-mode #profit-german-addtax-row,
+.compare-mode #profit-german-addhsc-row {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* 总计行 */
+.compare-mode .profit-row.total {
+  background: #dbeafe;
+  font-weight: 700;
+  font-size: 12px;
+  color: #1e40af;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.compare-mode .profit-label {
+  font-weight: inherit;
+}
+
+.compare-mode .profit-value {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.compare-mode .profit-value.highlight {
+  color: #1e40af;
+  font-size: 13px;
+}
+
+/* ========================================
+   打印样式 - 对比模式
+   ======================================== */
+@media print {
+  /* 隐藏左侧输入区 */
+  .compare-mode .pane-form {
+    display: none !important;
+  }
+  
+  /* 预览区占满全屏 */
+  .compare-mode .pane-preview {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* 避免分页断开 */
+  .compare-mode .compare-preview-card,
+  .compare-mode .compare-result-item,
+  .compare-mode .profit-card,
+  .compare-mode .profit-comparison {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* 统一容器内边距 */
+  .compare-mode .compare-container {
+    padding: 0;
+  }
+}

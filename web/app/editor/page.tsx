@@ -7,8 +7,8 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useWorkspace } from '@/components/auth/WorkspaceProvider';
 import { supabase } from '@/lib/supabase';
 
-// Legacy 编辑器 URL（从环境变量读取，或使用默认值）
-const LEGACY_URL = process.env.NEXT_PUBLIC_LEGACY_URL || 'https://viajes-fh.vercel.app';
+// Legacy 编辑器 URL（同域名，从 public/legacy 提供）
+const LEGACY_URL = '/legacy';
 
 // 单据类型标签
 const docTypeLabels: Record<string, string> = {
@@ -35,7 +35,7 @@ function EditorContent() {
   const mode = searchParams.get('mode') || 'create';
   const docId = searchParams.get('id');
 
-  // 构建 iframe URL
+  // 构建 iframe URL（同域名）
   const buildIframeUrl = useCallback(() => {
     const params = new URLSearchParams();
     params.set('type', docType);
@@ -43,10 +43,10 @@ function EditorContent() {
     params.set('embedded', 'true');
     if (docId) params.set('id', docId);
 
-    return `${LEGACY_URL}/#editor?${params.toString()}`;
+    return `${LEGACY_URL}/index.html#editor?${params.toString()}`;
   }, [docType, mode, docId]);
 
-  // 发送 session 到 iframe
+  // 发送 session 到 iframe（同域名，使用 window.location.origin）
   const sendSessionToIframe = useCallback(async () => {
     if (!iframeRef.current?.contentWindow || !session) return;
 
@@ -59,10 +59,10 @@ function EditorContent() {
             access_token: data.session.access_token,
             refresh_token: data.session.refresh_token,
           },
-          LEGACY_URL
+          window.location.origin
         );
         setSessionSent(true);
-        console.log('📤 Session sent to iframe');
+        console.log('📤 Session sent to iframe (same origin)');
       }
     } catch (err) {
       console.error('Failed to send session to iframe:', err);
@@ -80,8 +80,8 @@ function EditorContent() {
   // 监听来自 iframe 的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // 验证来源
-      if (!event.origin.includes(new URL(LEGACY_URL).hostname)) return;
+      // 同域名，验证来源
+      if (event.origin !== window.location.origin) return;
 
       const { type, id, docType: savedDocType } = event.data || {};
 

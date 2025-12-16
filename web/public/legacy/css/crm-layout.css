@@ -1,0 +1,902 @@
+/* ============================================
+   CRM Layout - 侧边栏布局系统
+   重构版本：纯 flex 布局，禁止 width:100%
+   ============================================ */
+
+:root {
+  --sidebar-width: 220px;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --nav-active-bg: #eff6ff;
+  --nav-active-color: #2563eb;
+  --nav-hover-bg: #f3f4f6;
+  --content-bg: #f8fafc;
+  --card-bg: #ffffff;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --card-radius: 12px;
+  --header-height: 73px;
+}
+
+/* ============================================
+   阶段一：全局基础样式
+   ============================================ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* CRM 布局模式 */
+body.crm-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 阶段一：完全隐藏原有的 app-container */
+body.crm-layout .app-container {
+  display: none !important;
+}
+
+/* ============================================
+   阶段二：主布局框架（纯 flex）
+   核心原则：
+   1. 所有 flex 子项必须有 min-width:0; min-height:0
+   2. 禁止使用 width:100% / 100vw
+   3. 使用 flex:1 让子项自动填充
+   ============================================ */
+
+/* CRM 主容器 */
+.crm-app {
+  display: none; /* 默认隐藏，登录后显示 */
+  flex: 1 1 0;
+  flex-direction: row;
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--content-bg);
+}
+
+body.crm-layout .crm-app {
+  display: flex;
+}
+
+/* ============================================
+   侧边栏（固定宽度，不参与 flex 伸缩）
+   ============================================ */
+.crm-sidebar {
+  flex: 0 0 var(--sidebar-width);
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  max-width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.crm-sidebar-header {
+  flex: 0 0 auto;
+  padding: 20px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.crm-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.crm-logo img {
+  width: 32px;
+  height: 32px;
+}
+
+/* 导航菜单 */
+.crm-nav {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.crm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 4px;
+}
+
+.crm-nav-item:hover {
+  background: var(--nav-hover-bg);
+}
+
+.crm-nav-item.active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-color);
+}
+
+.crm-nav-item svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.crm-nav-item.active svg {
+  stroke: var(--nav-active-color);
+}
+
+/* 侧边栏底部 */
+.crm-sidebar-footer {
+  flex: 0 0 auto;
+  padding: 16px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.crm-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.crm-user-avatar {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.crm-user-details {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.crm-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-user-role {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.crm-logout-btn {
+  flex: 0 0 auto;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.crm-logout-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ============================================
+   主内容区（flex 子项，自动填充剩余空间）
+   ============================================ */
+.crm-main {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 顶部工具栏（固定高度） */
+.crm-header {
+  flex: 0 0 auto;
+  height: var(--header-height);
+  background: white;
+  border-bottom: 1px solid var(--sidebar-border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.crm-page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.crm-page-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.crm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ============================================
+   内容区域（flex 子项，自动填充）
+   ============================================ */
+.crm-content {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   页面视图（flex 子项）
+   ============================================ */
+.crm-view {
+  display: none;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crm-view.active {
+  display: flex;
+}
+
+/* ============================================
+   阶段三：编辑器外壳结构（预留）
+   
+   结构层级：
+   #document-editor (editor-shell 外壳)
+     └── .editor-main (左侧预览区)
+     └── .editor-panel (右侧输入区)
+   ============================================ */
+
+/* 编辑器外壳 */
+#document-editor {
+  display: none;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: row;
+  overflow: hidden;
+  background: white;
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+#document-editor.active {
+  display: flex;
+}
+
+/* 编辑器左侧（预览区）- 占用剩余空间 */
+.editor-main {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--sidebar-border);
+  background: #e5e7eb;
+}
+
+.editor-main-scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 编辑器右侧（输入区）- 固定宽度 */
+.editor-panel {
+  flex: 0 0 380px;
+  min-width: 300px;
+  max-width: 420px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+}
+
+.editor-panel-scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+}
+
+/* 编辑器内的预览滚动区（从 .app-container 继承的结构） */
+.editor-main-scroll .preview-scroll-area {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 编辑器内的表单滚动区 */
+.editor-panel-scroll .form-scroll-area {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 编辑器内的 paper 样式 */
+.editor-main-scroll .paper {
+  flex-shrink: 0;
+  transform-origin: top center;
+  margin: 0 auto;
+}
+
+/* ============================================
+   数据卡片样式
+   ============================================ */
+.crm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.crm-stat-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.crm-stat-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crm-stat-icon.blue { background: #dbeafe; color: #2563eb; }
+.crm-stat-icon.green { background: #dcfce7; color: #16a34a; }
+.crm-stat-icon.orange { background: #ffedd5; color: #ea580c; }
+.crm-stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+
+.crm-stat-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.crm-stat-info {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.crm-stat-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.crm-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.crm-stat-change {
+  font-size: 12px;
+  color: #16a34a;
+  margin-left: 8px;
+}
+
+.crm-stat-change.negative {
+  color: #dc2626;
+}
+
+/* ============================================
+   内容卡片
+   ============================================ */
+.crm-card {
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crm-card-header {
+  flex: 0 0 auto;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crm-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.crm-card-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* ============================================
+   表格样式
+   ============================================ */
+.crm-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.crm-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  position: sticky;
+  top: 0;
+}
+
+.crm-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.crm-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.crm-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+/* ============================================
+   标签样式
+   ============================================ */
+.crm-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.crm-tag.green { background: #dcfce7; color: #16a34a; }
+.crm-tag.orange { background: #ffedd5; color: #ea580c; }
+.crm-tag.blue { background: #dbeafe; color: #2563eb; }
+.crm-tag.gray { background: #f3f4f6; color: #6b7280; }
+
+/* ============================================
+   按钮样式
+   ============================================ */
+.crm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  white-space: nowrap;
+}
+
+.crm-btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.crm-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.crm-btn-outline {
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.crm-btn-outline:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.crm-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+/* ============================================
+   单据中心样式
+   ============================================ */
+.document-type-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.doc-type-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+}
+
+.doc-type-tab:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.doc-type-tab.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.doc-type-tab .count {
+  background: rgba(0,0,0,0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.doc-type-tab.active .count {
+  background: rgba(255,255,255,0.2);
+}
+
+/* 搜索框 */
+.crm-search {
+  position: relative;
+}
+
+.crm-search input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.crm-search input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.crm-search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  stroke: #9ca3af;
+  fill: none;
+  stroke-width: 2;
+}
+
+/* 空状态 */
+.crm-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+}
+
+.crm-empty svg {
+  width: 64px;
+  height: 64px;
+  stroke: #d1d5db;
+  fill: none;
+  stroke-width: 1.5;
+  margin-bottom: 16px;
+}
+
+.crm-empty-text {
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+/* 文档工具栏 */
+.documents-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+#btn-back-to-list {
+  gap: 6px;
+}
+
+#btn-back-to-list svg {
+  margin-right: 2px;
+}
+
+/* 语言切换 */
+.crm-lang-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.crm-lang-btn {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.crm-lang-btn:hover {
+  background: #f3f4f6;
+}
+
+.crm-lang-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+/* ============================================
+   编辑器工具栏区域（编辑时显示）
+   ============================================ */
+.editor-toolbar-area {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: 24px;
+}
+
+body.crm-layout.editor-active .editor-toolbar-area {
+  display: flex;
+}
+
+body.crm-layout.editor-active .crm-page-title,
+body.crm-layout.editor-active .crm-page-subtitle {
+  display: none;
+}
+
+/* 模式切换按钮组 */
+.mode-switch-group {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-btn {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.mode-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.mode-btn.active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 操作按钮 */
+.action-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.action-btn.primary {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.action-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+/* ============================================
+   响应式布局
+   ============================================ */
+
+/* 大屏幕（>1400px）：右侧面板稍宽 */
+@media (min-width: 1400px) {
+  .editor-panel {
+    flex: 0 0 420px;
+  }
+}
+
+/* 中等屏幕（1024px - 1400px）：右侧面板稍窄 */
+@media (max-width: 1400px) and (min-width: 1025px) {
+  .editor-panel {
+    flex: 0 0 360px;
+    min-width: 300px;
+  }
+}
+
+/* 小屏幕（<=1024px）：侧边栏隐藏，编辑器上下布局 */
+@media (max-width: 1024px) {
+  .crm-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+  }
+  
+  .crm-sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* 编辑器改为上下布局 */
+  #document-editor.active {
+    flex-direction: column;
+  }
+  
+  .editor-main {
+    flex: 0 0 50vh;
+    min-height: 300px;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+  
+  .editor-panel {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    min-height: 400px;
+  }
+  
+  .editor-toolbar-area {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .mode-switch-group {
+    flex-wrap: wrap;
+  }
+}
+
+/* 超小屏幕（<=768px） */
+@media (max-width: 768px) {
+  .crm-content {
+    padding: 16px;
+  }
+  
+  .editor-main {
+    flex: 0 0 40vh;
+    min-height: 250px;
+  }
+  
+  .editor-main-scroll {
+    padding: 12px;
+  }
+  
+  .editor-panel-scroll {
+    padding: 12px;
+  }
+}
+
+

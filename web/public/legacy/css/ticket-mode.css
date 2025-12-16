@@ -1,0 +1,595 @@
+/**
+ * 票据模式专属样式
+ * 支付凭证 - 票据风格设计
+ */
+
+/* ========================================
+   票据模式输入区样式
+======================================== */
+
+/* 票据模式输入区显示控制 */
+.ticket-mode .ticket-inputs {
+  display: block !important;
+}
+
+/* 产品卡片样式 */
+.ticket-product-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.ticket-product-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ticket-product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #002b49 0%, #004d80 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.product-type-select select {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #002b49;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.product-type-select select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.product-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.product-actions .btn-icon {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+}
+
+.product-actions .btn-icon:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.product-actions .btn-icon[style*="dc2626"]:hover {
+  background: rgba(220, 38, 38, 0.3) !important;
+}
+
+.ticket-product-body {
+  padding: 14px;
+}
+
+.product-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.product-row:last-child {
+  margin-bottom: 0;
+}
+
+.product-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-field.flex-2 {
+  flex: 2;
+}
+
+.product-field.flex-1 {
+  flex: 1;
+}
+
+.product-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.product-price-row {
+  background: #f8fafc;
+  margin: 10px -14px 10px -14px;
+  padding: 12px 14px;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.product-price-row .product-field:last-child input {
+  font-weight: 700;
+  color: #002b49;
+  background: #e0f2fe;
+}
+
+/* 支付信息区块 */
+.ticket-payment-section {
+  border-color: #059669 !important;
+  background: #ecfdf5 !important;
+}
+
+.ticket-payment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.ticket-payment-item label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #047857;
+  margin-bottom: 4px;
+}
+
+/* ========================================
+   票据模式预览区样式 - 简洁大气风格
+======================================== */
+
+/* 票据预览容器 - 默认隐藏 */
+.ticket-preview {
+  display: none;
+  width: 100%;
+  padding: 0;
+}
+
+/* 票据凭证主体 */
+.ticket-voucher {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 撕开线效果 - 隐藏 */
+.ticket-tear-line {
+  display: none;
+}
+
+/* 客户信息栏 - 作为顶部区域 */
+.ticket-client-bar {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  background: #002b49;
+  color: white;
+}
+
+.ticket-client-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ticket-client-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.ticket-client-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+/* 产品明细区 */
+.ticket-products-section {
+  padding: 16px 24px;
+}
+
+.ticket-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ticket-section-title svg {
+  width: 14px;
+  height: 14px;
+  stroke: #64748b;
+}
+
+.ticket-section-title.small {
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+
+.ticket-section-title.small svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* 产品列表 */
+.ticket-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ticket-no-products {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+/* 产品条目 - 简洁表格风格 */
+.ticket-product-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ticket-product-item:last-child {
+  border-bottom: none;
+}
+
+.ticket-product-item:hover {
+  background: transparent;
+  transform: none;
+}
+
+.product-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-main-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.product-type-tag {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.product-desc {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.product-supplier,
+.product-dates,
+.product-confirm,
+.product-notes {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.product-confirm {
+  font-family: 'Courier New', monospace;
+  color: #475569;
+}
+
+.product-price {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.price-qty {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.price-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* 费用汇总区 - 简洁风格 */
+.ticket-summary-section {
+  margin: 0 24px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ticket-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.ticket-summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.summary-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ticket-summary-row.paid {
+  background: transparent;
+  margin: 0;
+  padding: 6px 0;
+  border-radius: 0;
+}
+
+.ticket-summary-row.paid .summary-label {
+  color: #059669;
+}
+
+.ticket-summary-row.paid .summary-value {
+  color: #059669;
+}
+
+.ticket-summary-row.pending {
+  background: #002b49;
+  color: white;
+  margin: 8px -16px 0 -16px;
+  padding: 10px 16px;
+}
+
+.ticket-summary-row.pending .summary-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.ticket-summary-row.pending .summary-value {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* 支付状态徽章 - 简化 */
+.ticket-status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  margin: 16px 24px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ticket-status-badge svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.ticket-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.ticket-status-badge.pending svg {
+  stroke: #d97706;
+}
+
+.ticket-status-badge.partial {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.ticket-status-badge.partial svg {
+  stroke: #2563eb;
+}
+
+.ticket-status-badge.paid {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.ticket-status-badge.paid .status-icon svg {
+  display: none;
+}
+
+.ticket-status-badge.paid .status-icon::after {
+  content: '✓';
+  font-size: 14px;
+}
+
+/* 支付详情区 */
+.ticket-payment-details {
+  padding: 16px 24px;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ticket-payment-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.payment-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.payment-info-row.note {
+  grid-column: 1 / -1;
+}
+
+.payment-info-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.payment-info-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+
+/* ========================================
+   票据模式下的footer-right（保留原有）
+======================================== */
+.ticket-mode .footer-right {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 票据模式总价框 */
+.ticket-mode .total-box {
+  padding: 14px 16px !important;
+  border-radius: 6px !important;
+  margin-top: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+  color: white !important;
+}
+
+/* 支付金额（已付） - 使用统一的深蓝色 */
+.ticket-mode .total-box.ticket-only:has(#display-ticket-paid) {
+  background: #002b49 !important;
+}
+
+/* 待支付金额 - 淡淡的灰色 */
+.ticket-mode .total-box.ticket-only:has(#display-ticket-pending) {
+  background: #94a3b8 !important;
+}
+
+.ticket-mode .total-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ticket-mode .total-title .en {
+  display: block;
+  font-size: 10px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.ticket-mode .total-value {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* 显示票据专属元素 */
+.ticket-mode .ticket-only {
+  display: flex !important;
+}
+
+/* 隐藏账单专属元素 */
+.ticket-mode .bill-only {
+  display: none !important;
+}
+
+/* 隐藏其他模式元素 */
+.ticket-mode .quote-only,
+.ticket-mode .compare-only {
+  display: none !important;
+}
+
+/* 票据模式下隐藏表格和原有footer */
+.ticket-mode .inv-table,
+.ticket-mode .inv-footer,
+.ticket-mode .box-container {
+  display: none !important;
+}
+
+/* 票据模式下隐藏付款方式区块 */
+.ticket-mode .hide-in-ticket {
+  display: none !important;
+}
+
+/* 票据模式下显示票据预览 */
+.ticket-mode .ticket-preview {
+  display: block !important;
+}
+
+/* ========================================
+   打印样式
+======================================== */
+@media print {
+  .ticket-voucher {
+    box-shadow: none !important;
+    border-width: 1px;
+  }
+  
+  .ticket-tear-line {
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      #002b49 4px,
+      #002b49 5px,
+      transparent 5px,
+      transparent 9px
+    );
+  }
+  
+  .ticket-product-item:hover {
+    transform: none;
+  }
+}
