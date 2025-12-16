@@ -8,7 +8,7 @@ import { useWorkspace } from '@/components/auth/WorkspaceProvider';
 import { supabase } from '@/lib/supabase';
 
 // Legacy 编辑器 URL（从环境变量读取，或使用默认值）
-const LEGACY_URL = process.env.NEXT_PUBLIC_LEGACY_URL || 'https://oms.fhglobal.es';
+const LEGACY_URL = process.env.NEXT_PUBLIC_LEGACY_URL || 'https://viajes-fh.vercel.app';
 
 // 单据类型标签
 const docTypeLabels: Record<string, string> = {

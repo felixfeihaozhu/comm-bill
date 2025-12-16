@@ -441,6 +441,31 @@ function hasSessionViaBridge() {
 }
 
 /**
+ * 在嵌入模式下配置纯编辑器视图
+ */
+function setupEmbeddedEditorView() {
+  console.log('🔧 配置嵌入模式编辑器视图');
+  
+  // 添加 embedded-mode 类
+  document.documentElement.classList.add('embedded-mode');
+  document.body.classList.add('embedded-mode');
+  
+  // 隐藏所有非编辑器元素
+  const loginScreen = document.getElementById('login-screen');
+  const crmApp = document.querySelector('.crm-app');
+  
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (crmApp) crmApp.style.display = 'none';
+  
+  // 显示编辑器容器
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.style.display = 'flex';
+    appContainer.classList.add('editor-visible', 'embedded-mode');
+  }
+}
+
+/**
  * 监听来自父窗口的会话注入（iframe 嵌入模式）
  * 当 Next.js CRM 通过 postMessage 发送会话时，接收并设置
  */
@@ -452,17 +477,8 @@ function initSessionBridge() {
   
   console.log('📡 初始化 session bridge（嵌入模式）');
   
-  // 嵌入模式下：隐藏登录界面，显示等待提示
-  const loginScreen = document.getElementById('login-screen');
-  const crmApp = document.querySelector('.crm-app');
-  const appContainer = document.querySelector('.app-container');
-  
-  if (loginScreen) {
-    loginScreen.style.display = 'none';
-  }
-  if (crmApp) {
-    crmApp.style.display = 'none';
-  }
+  // 立即配置嵌入模式视图
+  setupEmbeddedEditorView();
   
   window.addEventListener('message', async (event) => {
     const { type, access_token, refresh_token } = event.data || {};
@@ -506,23 +522,12 @@ function initSessionBridge() {
           detail: { role: ws.role, userId: data.user?.id }
         }));
         
-        // 嵌入模式：直接显示编辑器，不显示 CRM 导航
-        if (appContainer) {
-          appContainer.style.display = 'flex';
-          appContainer.classList.add('editor-visible', 'embedded-mode');
-        }
-        
-        // 触发编辑器打开事件（如果 URL 中有编辑器参数）
-        window.dispatchEvent(new CustomEvent('sessionReady'));
-        
       } catch (wsErr) {
         console.warn('⚠️ 工作空间初始化失败:', wsErr.message);
-        // 即使工作空间失败，也尝试显示编辑器
-        if (appContainer) {
-          appContainer.style.display = 'flex';
-          appContainer.classList.add('editor-visible', 'embedded-mode');
-        }
-        window.dispatchEvent(new CustomEvent('sessionReady'));
+        // 即使工作空间失败，也触发事件让编辑器初始化
+        window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
+          detail: { role: 'member', userId: data.user?.id }
+        }));
       }
       
     } catch (err) {

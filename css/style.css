@@ -1550,8 +1550,13 @@ body[lang="es"] .inv-title { font-size: 28px; }
    ========================================== */
 body.embedded-mode {
   background: #fff;
+  overflow: hidden;
 }
 
+/* 嵌入模式：隐藏所有非编辑器元素 */
+body.embedded-mode #login-screen,
+body.embedded-mode .login-screen,
+body.embedded-mode .crm-app,
 body.embedded-mode .crm-sidebar,
 body.embedded-mode .crm-header,
 body.embedded-mode #crm-nav,
@@ -1560,16 +1565,21 @@ body.embedded-mode .app-header {
   display: none !important;
 }
 
+/* 嵌入模式：编辑器容器样式 */
 body.embedded-mode .app-container {
+  display: flex !important;
   margin-left: 0 !important;
   padding-top: 0 !important;
+  width: 100vw;
+  height: 100vh;
 }
 
 body.embedded-mode .pane-split {
   height: 100vh;
 }
 
-/* 嵌入模式下移除可能导致滚动的多余元素 */
-body.embedded-mode {
-  overflow: hidden;
+body.embedded-mode .pane-preview,
+body.embedded-mode .pane-form {
+  height: 100vh;
+  overflow-y: auto;
 }

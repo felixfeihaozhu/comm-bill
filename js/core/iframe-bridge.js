@@ -57,11 +57,17 @@ export function notifyError(message) {
 export function hideNavigationIfEmbedded() {
     if (!isEmbeddedMode()) return;
     
-    // 添加 embedded 类到 body
+    console.log('🔧 嵌入模式：配置编辑器专用视图');
+    
+    // 添加 embedded 类到 body 和 html
+    document.documentElement.classList.add('embedded-mode');
     document.body.classList.add('embedded-mode');
     
-    // 隐藏可能冲突的导航元素
+    // 隐藏所有非编辑器元素
     const elementsToHide = [
+        '#login-screen',
+        '.login-screen',
+        '.crm-app',
         '.crm-sidebar',
         '.crm-header',
         '#crm-nav',
@@ -72,6 +78,13 @@ export function hideNavigationIfEmbedded() {
         const el = document.querySelector(selector);
         if (el) el.style.display = 'none';
     });
+    
+    // 显示编辑器容器
+    const appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+        appContainer.style.display = 'flex';
+        appContainer.classList.add('embedded-mode');
+    }
 }
 
 // 初始化 iframe bridge
@@ -116,5 +129,6 @@ export default {
     hideNavigationIfEmbedded,
     initIframeBridge
 };
+
 
 

@@ -16,6 +16,26 @@
   
   <!-- Supabase JS 库 (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 嵌入模式检测（必须在 body 渲染前执行） -->
+  <script>
+    (function() {
+      var isEmbedded = false;
+      try {
+        isEmbedded = window.self !== window.top;
+      } catch(e) {
+        isEmbedded = true;
+      }
+      var urlParams = new URLSearchParams(window.location.search || (window.location.hash.split('?')[1] || ''));
+      if (urlParams.get('embedded') === 'true' || isEmbedded) {
+        document.documentElement.classList.add('embedded-mode');
+        // 写入样式立即隐藏登录页和 CRM
+        var style = document.createElement('style');
+        style.textContent = 'html.embedded-mode #login-screen, html.embedded-mode .crm-app { display: none !important; } html.embedded-mode .app-container { display: flex !important; }';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
 </head>
 <body class="bill-mode crm-layout">
 
