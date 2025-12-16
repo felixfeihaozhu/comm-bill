@@ -204,3 +204,5 @@ export function DocumentsTable({ documents, loading, onDelete, onRefresh }: Docu
     </div>
   );
 }
+
+

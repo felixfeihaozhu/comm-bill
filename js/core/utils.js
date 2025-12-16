@@ -34,7 +34,7 @@ window.clearField = function(btn) {
   }
 }
 
-// 同步状态到Firebase
+// 同步状态到本地存储
 window.syncState = function(path, data) {
   if (!window.db || !window.ref || !window.set) return;
   try {

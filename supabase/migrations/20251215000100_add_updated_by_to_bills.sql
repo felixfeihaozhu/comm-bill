@@ -31,3 +31,5 @@ ALTER TABLE bill_item_addons ADD COLUMN IF NOT EXISTS updated_at timestamptz DEF
 COMMENT ON COLUMN bills.updated_by IS '最后修改人 user_id';
 COMMENT ON COLUMN bill_items.updated_by IS '最后修改人 user_id';
 COMMENT ON COLUMN bill_item_addons.updated_by IS '最后修改人 user_id';
+
+

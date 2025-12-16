@@ -1,8 +1,0 @@
-# 复制此文件为 .env.local 并修改配置
-
-# Legacy 编辑器 URL（不带尾部斜杠）
-# 生产环境
-NEXT_PUBLIC_LEGACY_URL=https://oms.fhglobal.es
-
-# 本地开发时使用（如果 legacy 运行在 5500 端口）
-# NEXT_PUBLIC_LEGACY_URL=http://localhost:5500

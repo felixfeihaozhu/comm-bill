@@ -61,7 +61,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         console.error('获取工作空间失败:', err);
         // 如果是权限错误或表不存在，尝试初始化
         if (err.code === '42501' || err.code === '42P01' || err.message?.includes('permission')) {
-          console.log('尝试初始化工作空间...');
+          // 尝试初始化工作空间
         }
       }
 
@@ -182,4 +182,6 @@ export function useWorkspace() {
   }
   return context;
 }
+
+
 

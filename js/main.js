@@ -1,4 +1,4 @@
-// 使用本地存储替代 Firebase Realtime Database
+// 使用本地存储保存草稿数据
 import { db, ref, set, onValue, get } from "./core/local-storage.js";
 import { t, setLanguage, getCurrentLanguage } from "./core/i18n.js?v=2";
 
@@ -15,9 +15,9 @@ import * as EditorView from "./editor/view.js";
 let CONFIG_DATA = null;
 const CONFIG_CACHE = {}; // 缓存每个模式的配置数据
 
-// 从 Firebase 加载配置（每个模式独立配置）
+// 加载配置（每个模式独立配置）
 async function loadConfig(mode = 'bill') {
-    console.log(`📡 Loading config from Firebase for mode: ${mode}`);
+    console.log(`📡 Loading config for mode: ${mode}`);
     
     // 如果已经缓存，直接返回
     if (CONFIG_CACHE[mode]) {
@@ -33,10 +33,10 @@ async function loadConfig(mode = 'bill') {
         
         if (snapshot.exists()) {
             CONFIG_DATA = snapshot.val();
-            console.log(`✅ 从Firebase加载配置成功: ${mode}`, CONFIG_DATA);
+            console.log(`✅ 从缓存加载配置成功: ${mode}`, CONFIG_DATA);
         } else {
-            // 如果Firebase没有数据，使用默认配置
-            console.log(`📝 Firebase无配置，使用默认值: ${mode}`);
+            // 如果没有数据，使用默认配置
+            console.log(`📝 无缓存配置，使用默认值: ${mode}`);
             CONFIG_DATA = {
                 clients: [],
                 ships: [],
@@ -62,9 +62,9 @@ async function loadConfig(mode = 'bill') {
                 }
             };
             
-            // 自动初始化Firebase配置
+            // 自动初始化配置
             await set(settingsRef, CONFIG_DATA);
-            console.log(`✅ 已初始化Firebase配置: ${mode}`);
+            console.log(`✅ 已初始化配置: ${mode}`);
         }
         
         // 缓存配置
@@ -131,7 +131,7 @@ let currentMode = localStorage.getItem('viewMode') || 'bill'; // 'bill', 'quote'
 const MODE_MODULES = {}; // 存储模式模块实例
 let draftUnsubscribe = null; // 存储当前的draft监听取消函数
 
-// 获取当前模式的Firebase路径
+// 获取当前模式的存储路径
 function getModePath(subPath = '') {
     // 安全检查：确保 currentMode 有效
     if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
@@ -152,7 +152,7 @@ window.switchMode = async function(mode) {
     
     currentMode = mode;
     
-    // 从Firebase加载当前模式的配置（包括所有settings数据）
+    // 加载当前模式的配置（包括所有settings数据）
     await loadConfig(mode);
     
     // 更新settings数据到window对象
@@ -459,7 +459,7 @@ No additional mandatory expenses during the cruise.`
 
 function getDefaultTermsConditions(lang) {
     const currentLang = lang || getCurrentLanguage();
-    // 优先从 Firebase 配置获取（支持多语言格式）
+    // 优先从配置获取（支持多语言格式）
     const configTerms = CONFIG_DATA?.defaults?.termsConditions;
     if (configTerms) {
         // 如果是对象格式（多语言），取对应语言
@@ -483,7 +483,7 @@ function getAllDefaultTerms() {
     // 添加本地默认值
     Object.values(DEFAULT_TERMS).forEach(t => allTerms.push(t));
     
-    // 添加 Firebase 配置中的值
+    // 添加配置中的值
     if (configTerms) {
         if (typeof configTerms === 'object') {
             Object.values(configTerms).forEach(t => allTerms.push(t));
@@ -497,7 +497,7 @@ function getAllDefaultTerms() {
 
 function getDefaultCancellationPolicy(lang) {
     const currentLang = lang || getCurrentLanguage();
-    // 优先从 Firebase 配置获取（支持多语言格式）
+    // 优先从配置获取（支持多语言格式）
     const configPolicy = CONFIG_DATA?.defaults?.cancellationPolicy;
     if (configPolicy) {
         // 如果是对象格式（多语言），取对应语言
@@ -521,7 +521,7 @@ function getAllDefaultCancellationPolicies() {
     // 添加本地默认值
     Object.values(DEFAULT_CANCELLATION).forEach(p => allPolicies.push(p));
     
-    // 添加 Firebase 配置中的值
+    // 添加配置中的值
     if (configPolicy) {
         if (typeof configPolicy === 'object') {
             Object.values(configPolicy).forEach(p => allPolicies.push(p));
@@ -538,7 +538,7 @@ function getDefaultPriceIncludes(lang) {
     const currentLang = lang || getCurrentLanguage();
     const configPriceIncludes = CONFIG_DATA?.defaults?.priceIncludes;
     
-    // 优先使用 Firebase 配置中的值
+    // 优先使用配置中的值
     if (configPriceIncludes) {
         // 如果是对象格式（多语言），取对应语言
         if (typeof configPriceIncludes === 'object' && configPriceIncludes[currentLang]) {
@@ -558,7 +558,7 @@ function getDefaultOtherPayment(lang) {
     const currentLang = lang || getCurrentLanguage();
     const configOtherPayment = CONFIG_DATA?.defaults?.otherPayment;
     
-    // 优先使用 Firebase 配置中的值
+    // 优先使用配置中的值
     if (configOtherPayment) {
         if (typeof configOtherPayment === 'object' && configOtherPayment[currentLang]) {
             return configOtherPayment[currentLang];
@@ -579,7 +579,7 @@ function getAllDefaultOtherPayment() {
     // 添加本地默认值
     Object.values(DEFAULT_OTHER_PAYMENT).forEach(p => allPayments.push(p));
     
-    // 添加 Firebase 配置中的值
+    // 添加配置中的值
     if (configOtherPayment) {
         if (typeof configOtherPayment === 'object') {
             Object.values(configOtherPayment).forEach(p => allPayments.push(p));
@@ -607,7 +607,7 @@ function getAllDefaultPriceIncludes() {
     };
     Object.values(oldDefaults).forEach(p => allIncludes.push(p));
     
-    // 添加 Firebase 配置中的值
+    // 添加配置中的值
     if (configPriceIncludes) {
         if (typeof configPriceIncludes === 'object') {
             Object.values(configPriceIncludes).forEach(p => allIncludes.push(p));
@@ -739,7 +739,7 @@ function editDatabaseItem(inputId, configKey, listId) {
         dbArray[idx] = newVal.trim();
         CONFIG_DATA[configKey] = dbArray;
         
-        // 保存到Firebase
+        // 保存到本地存储
         const settingsPath = `modes/${currentMode}/settings`;
         set(ref(db, settingsPath), CONFIG_DATA).then(() => {
             // 更新缓存和本地数据
@@ -776,7 +776,7 @@ function handleAutoSave(input, configKey, listId, msgId) {
         dbArray.push(val);
         CONFIG_DATA[configKey] = dbArray;
         
-        // 保存到Firebase
+        // 保存到本地存储
         const settingsPath = `modes/${currentMode}/settings`;
         set(ref(db, settingsPath), CONFIG_DATA).then(() => {
             // 更新缓存和本地数据
@@ -814,7 +814,7 @@ window.autoSaveItemDB = function(input, configKey, listId) {
       dbArray.push(val);
       CONFIG_DATA[configKey] = dbArray;
       
-      // 保存到Firebase
+      // 保存到本地存储
       const settingsPath = `modes/${currentMode}/settings`;
       set(ref(db, settingsPath), CONFIG_DATA).then(() => {
           CONFIG_CACHE[currentMode] = CONFIG_DATA;
@@ -841,7 +841,7 @@ window.editItemDb = function(index, field, configKey, listId) {
             dbArray[dbIdx] = newVal.trim();
             CONFIG_DATA[configKey] = dbArray;
             
-            // 保存到Firebase
+            // 保存到本地存储
             const settingsPath = `modes/${currentMode}/settings`;
             set(ref(db, settingsPath), CONFIG_DATA).then(() => {
                 CONFIG_CACHE[currentMode] = CONFIG_DATA;
@@ -870,7 +870,7 @@ window.editAddonDb = function(itemIndex, addonIndex, configKey, listId) {
             dbArray[dbIdx] = newVal.trim();
             CONFIG_DATA[configKey] = dbArray;
             
-            // 保存到Firebase
+            // 保存到本地存储
             const settingsPath = `modes/${currentMode}/settings`;
             set(ref(db, settingsPath), CONFIG_DATA).then(() => {
                 CONFIG_CACHE[currentMode] = CONFIG_DATA;
@@ -931,7 +931,7 @@ window.importData = function(input) {
           if(data.dbPrices) CONFIG_DATA.priceTypes = data.dbPrices;
           if(data.dbAddons) CONFIG_DATA.addonProducts = data.dbAddons;
           
-          // 保存到Firebase
+          // 保存到本地存储
           const settingsPath = `modes/${currentMode}/settings`;
           set(ref(db, settingsPath), CONFIG_DATA).then(() => {
               CONFIG_CACHE[currentMode] = CONFIG_DATA;
@@ -1541,13 +1541,13 @@ function getFieldsData() {
 
 let saveTimeout;
 let isSaving = false;
-let isLoadingFromFirebase = false;
+let isLoadingFromStorage = false;
 let isUserLoggedIn = false; // 跟踪用户登录状态
 
 function saveDraftDebounced() {
     console.log('saveDraftDebounced called', {
         hasUser: isUserLoggedIn,
-        isLoadingFromFirebase,
+        isLoadingFromStorage,
         currentMode
     });
     
@@ -1555,7 +1555,7 @@ function saveDraftDebounced() {
         console.warn('❗ No user authenticated');
         return;
     }
-    if(isLoadingFromFirebase) {
+    if(isLoadingFromStorage) {
         console.log('🔄 Skipping save - loading from localStorage');
         return; // 防止在加载远程数据时触发保存
     }
@@ -1566,7 +1566,7 @@ function saveDraftDebounced() {
         isSaving = true;
         const draftData = { items: window.items, fields: getFieldsData(), _updated: Date.now() };
         const path = getModePath('draft');
-        console.log('💾 Saving to Firebase:', path, draftData);
+        console.log('💾 Saving to localStorage:', path, draftData);
         
         // 使用模式特定的路径
         set(ref(db, path), draftData).then(() => {
@@ -1583,7 +1583,7 @@ function saveDraftDebounced() {
 
 // --- 初始化监听器 ---
 function initListeners() {
-    // 初始时加载当前模式的配置（从Firebase）
+    // 初始时加载当前模式的配置
     loadConfig(currentMode).then(() => {
         // 初始化settings数据到window对象
         window.clients = CONFIG_DATA.clients || [];
@@ -1627,7 +1627,7 @@ function subscribeToDraft() {
             return;
         }
         
-        isLoadingFromFirebase = true; // 标记开始加载远程数据
+        isLoadingFromStorage = true; // 标记开始加载数据
         const data = snapshot.val();
         console.log('📂 Loading draft data into form...');
         
@@ -1738,7 +1738,7 @@ function subscribeToDraft() {
               window.TicketMode.loadFromDraft(remoteFields);
             }
             
-            // 更新预览区，但不触发保存（因为 isLoadingFromFirebase = true）
+            // 更新预览区，但不触发保存（因为 isLoadingFromStorage = true）
             window.updateStateWithoutSave();
             
             setStatus('connected', '已同步');
@@ -1772,8 +1772,8 @@ function subscribeToDraft() {
         }
         
         // 立即重置加载标志，允许用户编辑
-        isLoadingFromFirebase = false;
-        console.log('✅ Finished loading from Firebase');
+        isLoadingFromStorage = false;
+        console.log('✅ Finished loading from localStorage');
     });
 }
 
@@ -1900,7 +1900,7 @@ window.addEventListener('userRoleLoaded', async (event) => {
     console.log('✅ User authenticated, initializing...');
     setStatus('connecting', '加载中...');
     
-    // 初始化编辑器核心（传递 Firebase 引用）
+    // 初始化编辑器核心（传递存储引用）
     Editor.initCore({ db, ref, set, onValue, get });
     Editor.setUserLoggedIn(true, { role, userId });
     

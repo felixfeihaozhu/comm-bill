@@ -47,3 +47,5 @@ export function DocumentTabs({ activeTab, onTabChange, counts }: DocumentTabsPro
     </div>
   );
 }
+
+

@@ -403,7 +403,7 @@
       return ticketProducts;
     },
 
-    // 设置产品数据（从Firebase加载时使用）
+    // 设置产品数据
     setProducts(products) {
       ticketProducts = products || [{ ...defaultProduct }];
       if (ticketProducts.length === 0) {

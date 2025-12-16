@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, hasValidSupabaseConfig } from './supabase'
 
 export interface Workspace {
   id: string
@@ -18,6 +18,10 @@ export interface WorkspaceMember {
 const CURRENT_WORKSPACE_KEY = 'fh-oms-current-workspace'
 
 export async function getUserWorkspaces(): Promise<Workspace[]> {
+  if (!hasValidSupabaseConfig()) {
+    return []
+  }
+
   try {
     const { data, error } = await supabase
       .from('workspace_members')
@@ -55,6 +59,10 @@ export async function getUserWorkspaces(): Promise<Workspace[]> {
 }
 
 export async function initWorkspace(name = 'My Workspace'): Promise<Workspace> {
+  if (!hasValidSupabaseConfig()) {
+    throw new Error('Supabase not configured')
+  }
+
   try {
     const { data, error } = await supabase.rpc('init_workspace', { ws_name: name })
 
@@ -109,6 +117,10 @@ export function clearCurrentWorkspaceId(): void {
 }
 
 export async function getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+  if (!hasValidSupabaseConfig()) {
+    return []
+  }
+
   try {
     const { data, error } = await supabase
       .from('workspace_members')
@@ -133,6 +145,10 @@ export async function addWorkspaceMember(
   email: string,
   role: 'admin' | 'member' = 'member'
 ): Promise<{ action: string; user_id: string; role: string }> {
+  if (!hasValidSupabaseConfig()) {
+    throw new Error('Supabase not configured')
+  }
+
   try {
     const { data, error } = await supabase.rpc('add_workspace_member', {
       ws_id: workspaceId,
@@ -153,6 +169,10 @@ export async function addWorkspaceMember(
 }
 
 export async function removeWorkspaceMember(memberId: string): Promise<void> {
+  if (!hasValidSupabaseConfig()) {
+    return
+  }
+
   try {
     const { error } = await supabase
       .from('workspace_members')
@@ -172,4 +192,3 @@ export async function removeWorkspaceMember(memberId: string): Promise<void> {
 export function isAdmin(role: string | null): boolean {
   return role === 'owner' || role === 'admin'
 }
-

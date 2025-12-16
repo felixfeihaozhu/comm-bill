@@ -78,16 +78,16 @@ async function initEditor(options = {}) {
 
 /**
  * 初始化编辑器核心逻辑（在用户登录后调用）
- * @param {Object} firebaseRefs - Firebase 引用 { db, ref, set, onValue, get }
+ * @param {Object} storageRefs - 存储引用 { db, ref, set, onValue, get }
  */
-function initEditorCore(firebaseRefs) {
+function initEditorCore(storageRefs) {
     if (isInitialized) {
         console.log('⚠️ Editor already initialized');
         return;
     }
     
     // 初始化 API
-    EditorAPI.initAPI(firebaseRefs);
+    EditorAPI.initAPI(storageRefs);
     
     // 初始化视图
     EditorView.initView();
@@ -398,3 +398,4 @@ window.Editor = {
 };
 
 console.log('📦 Editor 入口模块已加载');
+

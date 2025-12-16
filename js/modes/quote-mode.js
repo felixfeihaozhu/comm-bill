@@ -11,7 +11,7 @@
     data: null,
 
     async init() {
-      // 配置数据已迁移至 Firebase，无需加载本地 JSON
+      // 配置数据使用本地存储
       console.log('✅ Quote mode initialized');
     },
 

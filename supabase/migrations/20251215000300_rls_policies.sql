@@ -298,3 +298,5 @@ CREATE POLICY "orders_update" ON orders
 
 CREATE POLICY "orders_delete" ON orders
     FOR DELETE USING (auth.uid() IS NOT NULL);
+
+

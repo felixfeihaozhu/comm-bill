@@ -291,3 +291,5 @@ COMMENT ON FUNCTION is_workspace_member IS '检查当前用户是否是工作空
 COMMENT ON FUNCTION can_edit_bill IS '检查用户是否可以编辑指定账单';
 COMMENT ON FUNCTION init_workspace IS '初始化/获取用户工作空间';
 COMMENT ON FUNCTION add_workspace_member IS '添加成员到工作空间';
+
+

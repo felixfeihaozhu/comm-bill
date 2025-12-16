@@ -1,12 +1,12 @@
 /**
  * 编辑器数据API模块
  * 封装编辑器涉及的数据读写与保存
- * 复用现有 Firebase/Supabase 同步逻辑
+ * 草稿数据使用 LocalStorage，账单数据使用 Supabase
  */
 
 import * as EditorState from './state.js';
 
-// Firebase 相关引用（从 main.js 继承的逻辑）
+// 本地存储相关引用（从 main.js 继承的逻辑）
 let db = null;
 let ref = null;
 let set = null;
@@ -21,19 +21,19 @@ let saveTimeout = null;
 
 /**
  * 初始化 API 模块（需要在 main.js 初始化后调用）
- * @param {Object} firebaseRefs - { db, ref, set, onValue, get }
+ * @param {Object} storageRefs - { db, ref, set, onValue, get }
  */
-function initAPI(firebaseRefs) {
-    db = firebaseRefs.db;
-    ref = firebaseRefs.ref;
-    set = firebaseRefs.set;
-    onValue = firebaseRefs.onValue;
-    get = firebaseRefs.get;
-    console.log('📡 Editor API initialized with Firebase refs');
+function initAPI(storageRefs) {
+    db = storageRefs.db;
+    ref = storageRefs.ref;
+    set = storageRefs.set;
+    onValue = storageRefs.onValue;
+    get = storageRefs.get;
+    console.log('📡 Editor API initialized');
 }
 
 /**
- * 获取当前模式的 Firebase 路径
+ * 获取当前模式的存储路径
  * @param {string} subPath - 子路径
  * @returns {string}
  */
@@ -44,7 +44,7 @@ function getModePath(subPath = '') {
 }
 
 /**
- * 从 Firebase 加载配置
+ * 从本地存储加载配置
  * @param {string} mode - 模式名称
  * @returns {Promise<Object>}
  */
@@ -67,15 +67,15 @@ async function loadConfig(mode = 'bill') {
         let config;
         if (snapshot.exists()) {
             config = snapshot.val();
-            console.log(`✅ 从Firebase加载配置成功: ${mode}`);
+            console.log(`✅ 加载配置成功: ${mode}`);
         } else {
             // 使用默认配置
             config = getDefaultConfig();
-            console.log(`📝 Firebase无配置，使用默认值: ${mode}`);
+            console.log(`📝 无配置，使用默认值: ${mode}`);
             
-            // 初始化 Firebase 配置
+            // 初始化配置
             await set(settingsRef, config);
-            console.log(`✅ 已初始化Firebase配置: ${mode}`);
+            console.log(`✅ 已初始化配置: ${mode}`);
         }
         
         // 缓存配置
@@ -122,7 +122,7 @@ function getDefaultConfig() {
 }
 
 /**
- * 保存配置到 Firebase
+ * 保存配置到本地存储
  * @param {string} mode - 模式名称
  * @param {Object} config - 配置数据
  */
@@ -171,7 +171,7 @@ function subscribeToDraft(onDataReceived) {
         }
         
         EditorState.setLoading(false);
-        console.log('✅ Finished loading from Firebase');
+        console.log('✅ Finished loading');
     });
 }
 
@@ -186,7 +186,7 @@ function unsubscribeFromDraft() {
 }
 
 /**
- * 保存 draft 数据到 Firebase（防抖）
+ * 保存 draft 数据（防抖）
  * @param {Object} draftData - { items, fields }
  */
 function saveDraftDebounced(draftData) {
@@ -196,7 +196,7 @@ function saveDraftDebounced(draftData) {
     }
     
     if (EditorState.isLoading()) {
-        console.log('🔄 Skipping save - loading from Firebase');
+        console.log('🔄 Skipping save - loading');
         return;
     }
     
@@ -210,7 +210,7 @@ function saveDraftDebounced(draftData) {
             _updated: Date.now()
         };
         
-        console.log('💾 Saving to Firebase:', path);
+        console.log('💾 Saving:', path);
         
         set(ref(db, path), dataToSave)
             .then(() => {
@@ -401,3 +401,4 @@ window.EditorAPI = {
 };
 
 console.log('📦 Editor API 模块已加载');
+

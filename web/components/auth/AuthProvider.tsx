@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, hasValidSupabaseConfig } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -25,18 +25,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return;
     initialized.current = true;
 
+    // 如果没有有效的 Supabase 配置，直接停止加载
+    if (!hasValidSupabaseConfig()) {
+      console.warn('Supabase not configured, skipping auth initialization');
+      setLoading(false);
+      return;
+    }
+
     // 1. 首先尝试从存储恢复 session
     const initSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('获取 session 失败:', error);
         }
         
-        if (session) {
-          setSession(session);
-          setUser(session.user);
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
         }
       } catch (err) {
         console.error('初始化 session 失败:', err);
@@ -45,12 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // 添加超时保护，确保 loading 状态不会永远卡住
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth initialization timeout, forcing loading to false');
+        setLoading(false);
+      }
+    }, 5000);
+
     initSession();
 
     // 2. 监听 auth 状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: Session | null) => {
-        console.log('Auth state changed:', event);
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -63,11 +77,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    if (!hasValidSupabaseConfig()) {
+      return { error: new Error('Supabase not configured') };
+    }
+
     setLoading(true);
     
     try {
@@ -90,6 +109,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (!hasValidSupabaseConfig()) {
+      setUser(null);
+      setSession(null);
+      return;
+    }
+
     setLoading(true);
     
     try {
@@ -115,3 +140,4 @@ export function useAuth() {
   }
   return context;
 }
+

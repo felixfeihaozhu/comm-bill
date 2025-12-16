@@ -1,24 +1,52 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL or Anon Key is missing. Some features may not work.')
-}
+// 延迟初始化 Supabase client，避免静态生成时报错
+let _supabase: SupabaseClient | null = null
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
+function getSupabaseClient(): SupabaseClient {
+  if (_supabase) return _supabase
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // 在构建时提供一个 placeholder URL，运行时会被实际环境变量替换
+    const placeholderUrl = supabaseUrl || 'https://placeholder.supabase.co'
+    const placeholderKey = supabaseAnonKey || 'placeholder-key'
+    
+    _supabase = createClient(placeholderUrl, placeholderKey, {
+      auth: {
+        persistSession: typeof window !== 'undefined',
+        autoRefreshToken: true,
+        detectSessionInUrl: typeof window !== 'undefined',
+        storageKey: 'fh-oms-auth',
+      },
+    })
+    return _supabase
+  }
+
+  _supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'fh-oms-auth',
     },
-  }
-)
+  })
+  return _supabase
+}
+
+// 导出一个 getter 代理，确保每次访问时都检查初始化状态
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    const client = getSupabaseClient()
+    const value = (client as any)[prop]
+    if (typeof value === 'function') {
+      return value.bind(client)
+    }
+    return value
+  },
+})
 
 // 单据类型
 export type DocType = 'bill' | 'quote' | 'ticket' | 'compare'
@@ -57,12 +85,22 @@ export interface Customer {
   created_at: string
 }
 
+// 检查是否有有效的 Supabase 配置
+export function hasValidSupabaseConfig(): boolean {
+  return Boolean(supabaseUrl && supabaseAnonKey)
+}
+
 // 获取单据列表
 export async function getDocuments(options: {
   mode?: DocType
   search?: string
   limit?: number
 } = {}): Promise<DocumentRow[]> {
+  if (!hasValidSupabaseConfig()) {
+    console.warn('Supabase not configured, returning empty array')
+    return []
+  }
+
   const { mode, search, limit = 50 } = options
 
   try {
@@ -97,6 +135,10 @@ export async function getDocuments(options: {
 
 // 获取单个单据
 export async function getDocument(id: string): Promise<DocumentRow | null> {
+  if (!hasValidSupabaseConfig()) {
+    return null
+  }
+
   try {
     const { data, error } = await supabase
       .from('bills')
@@ -118,6 +160,10 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
 
 // 删除单据
 export async function deleteDocument(id: string): Promise<boolean> {
+  if (!hasValidSupabaseConfig()) {
+    return false
+  }
+
   try {
     const { error } = await supabase
       .from('bills')
@@ -141,6 +187,10 @@ export async function getCustomers(options: {
   search?: string
   limit?: number
 } = {}): Promise<Customer[]> {
+  if (!hasValidSupabaseConfig()) {
+    return []
+  }
+
   const { search, limit = 100 } = options
 
   try {
