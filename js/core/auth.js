@@ -3,6 +3,7 @@
  */
 
 import { getSupabase, initWorkspace } from './supabase-config.js';
+import { isEmbeddedMode, postToParent } from './iframe-bridge.js';
 
 /**
  * 本地存储键名
@@ -420,6 +421,69 @@ function initLoginUI() {
   }
 }
 
+/**
+ * 监听来自父窗口的会话注入（iframe 嵌入模式）
+ * 当 Next.js CRM 通过 postMessage 发送会话时，接收并设置
+ */
+function initSessionBridge() {
+  if (!isEmbeddedMode()) {
+    console.log('📭 非嵌入模式，跳过 session bridge');
+    return;
+  }
+  
+  console.log('📡 初始化 session bridge（嵌入模式）');
+  
+  window.addEventListener('message', async (event) => {
+    const { type, access_token, refresh_token } = event.data || {};
+    
+    if (type !== 'FH_SUPABASE_SESSION') return;
+    
+    console.log('📥 收到父窗口发送的会话');
+    
+    if (!access_token || !refresh_token) {
+      console.warn('⚠️ 会话数据不完整');
+      return;
+    }
+    
+    try {
+      const client = getSupabase();
+      const { data, error } = await client.auth.setSession({
+        access_token,
+        refresh_token
+      });
+      
+      if (error) {
+        console.error('❌ 设置会话失败:', error);
+        postToParent('editor:error', { message: '会话同步失败: ' + error.message });
+        return;
+      }
+      
+      console.log('✅ 会话设置成功:', data.user?.email);
+      
+      // 发送确认消息给父窗口
+      postToParent('FH_SESSION_ACK', { success: true, email: data.user?.email });
+      
+      // 初始化工作空间
+      try {
+        const ws = await initWorkspace('Viajes FH');
+        storeRole(ws.role || 'member');
+        console.log('✅ 工作空间已初始化:', ws.role);
+        
+        // 触发 UI 更新事件
+        window.dispatchEvent(new CustomEvent('userRoleLoaded', { 
+          detail: { role: ws.role, userId: data.user?.id }
+        }));
+      } catch (wsErr) {
+        console.warn('⚠️ 工作空间初始化失败:', wsErr.message);
+      }
+      
+    } catch (err) {
+      console.error('❌ 会话设置异常:', err);
+      postToParent('editor:error', { message: '会话同步异常' });
+    }
+  });
+}
+
 // 导出
 export { 
   loginWithPassword,
@@ -428,5 +492,6 @@ export {
   getCurrentUser, 
   isAdmin, 
   onAuthChange, 
-  initLoginUI 
+  initLoginUI,
+  initSessionBridge
 };

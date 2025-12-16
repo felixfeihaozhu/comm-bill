@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. 监听 auth 状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: Session | null) => {
+        console.log('Auth state changed:', event);
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);

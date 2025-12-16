@@ -46,12 +46,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // 未登录（跳转中）
+  // 未登录（跳转中）- 显示跳转提示而非空白
   if (!user) {
-    return null;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+          <p className="text-gray-500 text-sm">正在跳转到登录页...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
 }
+
 
 

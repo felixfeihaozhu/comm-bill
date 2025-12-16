@@ -3,13 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from './AuthProvider';
 import {
-  Workspace,
   getUserWorkspaces,
   initWorkspace,
   getCurrentWorkspaceId,
   setCurrentWorkspaceId,
   clearCurrentWorkspaceId,
-  isAdmin as checkIsAdmin,
+  type Workspace,
 } from '@/lib/workspace';
 
 interface WorkspaceContextType {
@@ -22,6 +21,7 @@ interface WorkspaceContextType {
   error: string | null;
   switchWorkspace: (workspaceId: string) => void;
   refreshWorkspaces: () => Promise<void>;
+  createWorkspace: (name: string) => Promise<Workspace>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -33,10 +33,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const initialized = useRef(false);
-  const previousUserId = useRef<string | null>(null);
-  const loadingRef = useRef(false);
 
-  // 加载工作空间
+  // 加载工作空间列表
   const loadWorkspaces = useCallback(async () => {
     if (!user) {
       setWorkspaces([]);
@@ -45,129 +43,110 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 防止并发加载
-    if (loadingRef.current) {
-      return;
-    }
-    loadingRef.current = true;
-
     try {
       setError(null);
-      let wsList: Workspace[] = [];
-      
-      try {
-        wsList = await getUserWorkspaces();
-      } catch (err: any) {
-        console.error('获取工作空间失败:', err);
-        // 如果是权限错误或表不存在，尝试初始化
-        if (err.code === '42501' || err.code === '42P01' || err.message?.includes('permission')) {
-          // 尝试初始化工作空间
-        }
-      }
+      const list = await getUserWorkspaces();
 
-      // 如果没有工作空间，尝试初始化一个
-      if (wsList.length === 0) {
-        try {
-          const newWs = await initWorkspace('Viajes FH');
-          wsList = [newWs];
-        } catch (initErr: any) {
-          console.error('初始化工作空间失败:', initErr);
-          // 即使初始化失败也继续，用户可以稍后重试
-        }
-      }
-
-      setWorkspaces(wsList);
-
-      // 恢复或设置当前工作空间
-      if (wsList.length > 0) {
-        const savedWsId = getCurrentWorkspaceId();
-        let current = wsList.find(ws => ws.id === savedWsId);
-        
-        if (!current) {
-          current = wsList[0];
-          setCurrentWorkspaceId(current.id);
-        }
-
-        setCurrentWorkspace(current);
+      if (list.length === 0) {
+        // 没有工作空间，自动创建一个
+        console.log('没有工作空间，自动创建...');
+        const newWs = await initWorkspace('My Workspace');
+        setWorkspaces([newWs]);
+        setCurrentWorkspace(newWs);
+        setCurrentWorkspaceId(newWs.id);
       } else {
-        setCurrentWorkspace(null);
+        setWorkspaces(list);
+
+        // 尝试恢复上次选择的工作空间
+        const savedId = getCurrentWorkspaceId();
+        const saved = savedId ? list.find((w) => w.id === savedId) : null;
+        const selected = saved || list[0];
+
+        setCurrentWorkspace(selected);
+        setCurrentWorkspaceId(selected.id);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('加载工作空间失败:', err);
-      setError(err.message || '加载工作空间失败');
-      setWorkspaces([]);
-      setCurrentWorkspace(null);
+      setError(err instanceof Error ? err.message : '加载工作空间失败');
     } finally {
       setLoading(false);
-      loadingRef.current = false;
     }
   }, [user]);
 
-  // 初始化 - 当用户变化时重新加载
+  // 初始化
   useEffect(() => {
     // 等待 auth 加载完成
-    if (authLoading) {
-      return;
-    }
-    
-    // 用户登出
-    if (!user) {
-      setWorkspaces([]);
-      setCurrentWorkspace(null);
-      setLoading(false);
-      setError(null);
-      clearCurrentWorkspaceId();
-      initialized.current = false;
-      previousUserId.current = null;
-      return;
-    }
+    if (authLoading) return;
 
-    // 用户切换或首次加载
-    if (previousUserId.current !== user.id) {
-      previousUserId.current = user.id;
-      initialized.current = false;
-    }
+    // 防止重复初始化
+    if (initialized.current) return;
+    initialized.current = true;
 
-    if (!initialized.current) {
-      initialized.current = true;
-      loadWorkspaces();
+    loadWorkspaces();
+  }, [authLoading, loadWorkspaces]);
+
+  // 用户变化时重新加载
+  useEffect(() => {
+    if (!authLoading && initialized.current) {
+      // 用户变化时重置状态
+      if (!user) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        clearCurrentWorkspaceId();
+        setLoading(false);
+      }
     }
-  }, [user, authLoading, loadWorkspaces]);
+  }, [user, authLoading]);
 
   // 切换工作空间
-  const switchWorkspace = useCallback((workspaceId: string) => {
-    const ws = workspaces.find(w => w.id === workspaceId);
-    if (ws) {
-      setCurrentWorkspace(ws);
-      setCurrentWorkspaceId(workspaceId);
-    }
-  }, [workspaces]);
+  const switchWorkspace = useCallback(
+    (workspaceId: string) => {
+      const ws = workspaces.find((w) => w.id === workspaceId);
+      if (ws) {
+        setCurrentWorkspace(ws);
+        setCurrentWorkspaceId(ws.id);
+      }
+    },
+    [workspaces]
+  );
 
   // 刷新工作空间列表
   const refreshWorkspaces = useCallback(async () => {
     initialized.current = false;
-    loadingRef.current = false;
+    setLoading(true);
     await loadWorkspaces();
   }, [loadWorkspaces]);
 
-  const role = currentWorkspace?.role || null;
-  const isAdmin = checkIsAdmin(role);
+  // 创建新工作空间
+  const createWorkspace = useCallback(
+    async (name: string): Promise<Workspace> => {
+      const newWs = await initWorkspace(name);
+      setWorkspaces((prev) => [...prev, newWs]);
+      setCurrentWorkspace(newWs);
+      setCurrentWorkspaceId(newWs.id);
+      return newWs;
+    },
+    []
+  );
 
-  // 计算实际 loading 状态
-  const isLoading = authLoading || (loading && !initialized.current);
+  // 计算派生值
+  const currentWorkspaceId = currentWorkspace?.id || null;
+  const role = currentWorkspace?.role || null;
+  const isAdmin = role === 'owner' || role === 'admin';
 
   return (
     <WorkspaceContext.Provider
       value={{
         workspaces,
         currentWorkspace,
-        currentWorkspaceId: currentWorkspace?.id || null,
+        currentWorkspaceId,
         role,
         isAdmin,
-        loading: isLoading,
+        loading,
         error,
         switchWorkspace,
         refreshWorkspaces,
+        createWorkspace,
       }}
     >
       {children}
@@ -182,6 +161,3 @@ export function useWorkspace() {
   }
   return context;
 }
-
-
-

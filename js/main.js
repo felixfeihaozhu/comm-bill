@@ -5,6 +5,9 @@ import { t, setLanguage, getCurrentLanguage } from "./core/i18n.js?v=2";
 // iframe 通信桥接
 import * as IframeBridge from "./core/iframe-bridge.js";
 
+// 认证模块（用于 session bridge）
+import { initSessionBridge } from "./core/auth.js";
+
 // 编辑器模块
 import * as Editor from "./editor/index.js";
 import * as EditorState from "./editor/state.js";
@@ -1930,6 +1933,9 @@ window.addEventListener('userRoleLoaded', async (event) => {
     
     // 初始化 iframe 桥接（用于嵌入 Next.js CRM）
     IframeBridge.initIframeBridge();
+    
+    // 初始化 session 桥接（接收父窗口发送的会话）
+    initSessionBridge();
     
     console.log('🎯 Adding input listeners to form elements...');
     document.querySelectorAll('.pane-form input, .pane-form textarea').forEach(el => {
